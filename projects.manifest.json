@@ -1,0 +1,18 @@
+{
+  "$schema": "./scripts/manifest.schema.json",
+  "owner": "kostavukicevic",
+  "projects": [
+    {
+      "repo": "kostavukicevic/Kap",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
+      "repo": "kostavukicevic/BeogradPlusPlus",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": false
+    }
+  ]
+}

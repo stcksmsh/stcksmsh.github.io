@@ -1,0 +1,125 @@
+---
+import Base from "../layouts/Base.astro";
+import Oscilloscope from "../components/islands/Oscilloscope.tsx";
+import { getCollection } from "astro:content";
+
+// Federated projects — may be empty on first run before manifest repos exist.
+let projects: any[] = [];
+try {
+  const all = await getCollection("projects");
+  projects = all
+    .map((p) => p.data)
+    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
+} catch {}
+
+const nav = [
+  ["projects", "/#work"],
+  ["devlog", "/devlog"],
+  ["music", "/music"],
+  ["cv", "/cv"],
+];
+---
+<Base title="Kosta Vukićević">
+  <nav class="shell nav">
+    <a href="/" class="mark">KV</a>
+    <ul>
+      {nav.map(([label, href]) => (
+        <li><a href={href}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <header class="shell hero">
+    <div class="hero-scope">
+      <Oscilloscope client:load mode="lissajous" ratio={[3, 2]} height={480} />
+    </div>
+    <div class="hero-copy">
+      <span class="coord">SIG · BELGRADE · 44.81°N 20.46°E</span>
+      <h1>KOSTA<br/>VUKIĆEVIĆ</h1>
+      <p class="lede">
+        Software engineer at Rivian·VW. Systems, Android, and music —
+        signal traced across every layer from microkernel to melody.
+      </p>
+    </div>
+  </header>
+
+  <section class="shell" id="work" style="margin-top: 5rem;">
+    <div class="section-head">
+      <span class="coord">01 / WORK</span>
+      <h2>Selected builds</h2>
+    </div>
+
+    {projects.length === 0 ? (
+      <p class="empty coord">
+        // no federated projects yet — push an <code>io-page</code> branch
+        with a <code>meta.json</code> to any repo in the manifest
+      </p>
+    ) : (
+      <ul class="cards">
+        {projects.map((p) => (
+          <li
+            class="card"
+            style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
+          >
+            <a href={`/projects/${p.slug}`}>
+              <span class="card-status coord">{p.status}</span>
+              <h3>{p.title}</h3>
+              <p class="card-tag">{p.tagline}</p>
+              <ul class="stack">
+                {p.stack.slice(0, 4).map((s: string) => <li>{s}</li>)}
+              </ul>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Base>
+
+<style>
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    border-bottom: var(--border);
+  }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
+  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav ul a:hover { color: var(--accent); }
+
+  .hero { padding-top: clamp(2rem, 6vw, 6rem); }
+  .hero-scope {
+    border: var(--border); border-radius: var(--radius);
+    background: var(--bg-sunken); overflow: hidden;
+    box-shadow: 0 0 80px -30px var(--accent-glow);
+  }
+  .hero-copy { margin-top: 2rem; }
+  .hero-copy h1 {
+    font-size: var(--hero); letter-spacing: -0.03em; margin: 0.5rem 0 1.5rem;
+    background: linear-gradient(100deg, var(--ink), var(--accent));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+
+  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
+  .section-head h2 { font-size: var(--step-2); }
+
+  .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .card {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
+  }
+  .card:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
+  .card a { display: block; padding: 1.5rem; color: inherit; }
+  .card a:hover { text-decoration: none; }
+  .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
+  .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
+  .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
+  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+
+  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+  .empty code { color: var(--accent); }
+</style>

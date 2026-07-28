@@ -1,0 +1,69 @@
+/* ═══════════════════════════════════════════════════════════════════
+   СИНТЕЗА — design tokens
+   Terminal/synth substrate · maximalist skin.
+   Everything references the oscilloscope: grid = time axis,
+   accent = wavelength, motion = periodic (sine), never eased decoration.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Substrate ─────────────────────────────────────────────────
+     Not #000 — a desaturated blue-black so accents glow against it. */
+  --bg:        oklch(0.15 0.02 260);
+  --bg-raise:  oklch(0.19 0.025 260);   /* cards, raised surfaces */
+  --bg-sunken: oklch(0.12 0.02 260);    /* wells, code blocks */
+  --grid-line: oklch(0.28 0.02 260 / 0.5);
+  --hairline:  oklch(0.35 0.015 260 / 0.6);
+
+  /* ── Ink ─────────────────────────────────────────────────────── */
+  --ink:       oklch(0.94 0.01 260);    /* primary text */
+  --ink-dim:   oklch(0.70 0.015 260);   /* secondary */
+  --ink-faint: oklch(0.52 0.02 260);    /* captions, coordinate labels */
+
+  /* ── House accents (non-project surfaces) ──────────────────────
+     The Justice/synth triad. Equal chroma = equal visual weight. */
+  --accent-orange:  oklch(0.72 0.19 45);   /* site primary */
+  --accent-cyan:    oklch(0.80 0.15 195);
+  --accent-magenta: oklch(0.68 0.24 335);
+
+  /* Live accent — retinted per-project page via inline --accent-l/c/h */
+  --accent-l: 0.72;
+  --accent-c: 0.19;
+  --accent-h: 45;
+  --accent:      oklch(var(--accent-l) var(--accent-c) var(--accent-h));
+  --accent-soft: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.15);
+  --accent-glow: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.4);
+
+  /* ── Type ──────────────────────────────────────────────────────
+     Display/UI: Chakra Petch.
+     Long-form: a mono, so devlogs read like a terminal log. */
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* Fluid scale — maximalism lives at the top end (hero up to ~14vw) */
+  --step--1: clamp(0.78rem, 0.74rem + 0.2vw, 0.9rem);
+  --step-0:  clamp(0.95rem, 0.9rem + 0.25vw, 1.1rem);
+  --step-1:  clamp(1.2rem, 1.05rem + 0.7vw, 1.6rem);
+  --step-2:  clamp(1.6rem, 1.3rem + 1.5vw, 2.6rem);
+  --step-3:  clamp(2.2rem, 1.6rem + 3vw, 4.5rem);
+  --hero:    clamp(3rem, 1rem + 12vw, 14rem);
+
+  /* ── Grid & rhythm ─────────────────────────────────────────── */
+  --gap: clamp(1rem, 0.6rem + 2vw, 2.5rem);
+  --measure: 68ch;
+  --radius: 2px;              /* near-brutalist; corners barely softened */
+  --border: 1px solid var(--hairline);
+
+  /* ── Motion — one shared frequency; the whole site breathes ──── */
+  --period: 4s;              /* base sine period for ambient motion */
+  --ease-scope: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Motion-heavy site → hard requirement: freeze the sine. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --period: 0s; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
