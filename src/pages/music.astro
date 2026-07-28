@@ -1,0 +1,144 @@
+---
+import Base from "../layouts/Base.astro";
+import Oscilloscope from "../components/islands/Oscilloscope.tsx";
+import { getCollection } from "astro:content";
+
+// Embed URL convention (documented here since the schema field is just a
+// free-form string):
+//  - soundcloud: embedId is the track path after soundcloud.com/, e.g.
+//    "artist-name/track-slug"
+//  - bandcamp: embedId is the "album=<id>" or "track=<id>" fragment from
+//    Bandcamp's own Share/Embed → Code panel
+function embedSrc(track: { source: "soundcloud" | "bandcamp"; embedId: string }) {
+  if (track.source === "soundcloud") {
+    const url = encodeURIComponent(`https://soundcloud.com/${track.embedId}`);
+    return `https://w.soundcloud.com/player/?url=${url}&auto_play=false&hide_related=true&show_comments=false&show_reposts=false&show_teaser=false&visual=false`;
+  }
+  return `https://bandcamp.com/EmbeddedPlayer/${track.embedId}/size=large/bgcol=141a2e/linkcol=fa8231/tracklist=false/artwork=small/transparent=true/`;
+}
+
+let tracks: any[] = [];
+try {
+  const all = await getCollection("music");
+  tracks = all
+    .map((t) => t.data)
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+} catch {}
+
+const nav = [
+  ["projects", "/#work"],
+  ["devlog", "/devlog"],
+  ["music", "/music"],
+  ["cv", "/cv"],
+];
+---
+<Base title="Music — Kosta Vukićević" description="Tracks, embeds, and the oscilloscope work behind them.">
+  <nav class="shell nav">
+    <a href="/" class="mark">KV</a>
+    <ul>
+      {nav.map(([label, href]) => (
+        <li><a href={href}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <header class="shell music-hero">
+    <div class="music-scope">
+      <Oscilloscope client:load mode="wave" height={360} />
+    </div>
+    <div class="hero-copy">
+      <span class="coord">02 / SIGNAL</span>
+      <h1>Music</h1>
+      <p class="lede">
+        Tracks, embedded — no self-hosted audio, just SoundCloud and Bandcamp
+        players retinted to fit.
+      </p>
+    </div>
+  </header>
+
+  <section class="shell" id="tracks" style="margin-top: 3rem;">
+    {tracks.length === 0 ? (
+      <p class="empty coord">
+        // no tracks yet — add entries to <code>src/content/music/*.json</code>
+      </p>
+    ) : (
+      <ul class="tracks">
+        {tracks.map((t) => (
+          <li
+            class="track"
+            style={t.accent ? `--accent-l:${t.accent[0]};--accent-c:${t.accent[1]};--accent-h:${t.accent[2]};` : ""}
+          >
+            <div class="track-meta coord">
+              <span>{t.source}</span>
+              {t.year && <span>{t.year}</span>}
+            </div>
+            <h3>{t.title}</h3>
+            <div class="track-embed">
+              {t.source === "soundcloud" ? (
+                <iframe
+                  loading="lazy"
+                  width="100%"
+                  height="166"
+                  scrolling="no"
+                  frameborder="no"
+                  allow="autoplay"
+                  title={t.title}
+                  src={embedSrc(t)}
+                />
+              ) : (
+                <iframe
+                  loading="lazy"
+                  width="100%"
+                  height="300"
+                  seamless
+                  title={t.title}
+                  src={embedSrc(t)}
+                />
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Base>
+
+<style>
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    border-bottom: var(--border);
+  }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
+  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav ul a:hover { color: var(--accent); }
+
+  .music-hero { padding-top: clamp(2rem, 6vw, 6rem); }
+  .music-scope {
+    border: var(--border); border-radius: var(--radius);
+    background: var(--bg-sunken); overflow: hidden;
+    box-shadow: 0 0 80px -30px var(--accent-glow);
+  }
+  .hero-copy { margin-top: 2rem; }
+  .hero-copy h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
+  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+
+  .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .track {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    padding: 1.5rem;
+    box-shadow: 0 0 0 transparent;
+    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
+  }
+  .track:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); }
+  .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
+  .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
+  .track-embed { border-radius: var(--radius); overflow: hidden; }
+  .track-embed iframe { display: block; border: 0; }
+
+  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+  .empty code { color: var(--accent); }
+</style>
