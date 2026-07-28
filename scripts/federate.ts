@@ -29,7 +29,7 @@ const ManifestSchema = z.object({
   owner: z.string(),
   projects: z.array(
     z.object({
-      repo: z.string(),                 // "kostavukicevic/Kap"
+      repo: z.string(),                 // "stcksmsh/Kap"
       branch: z.string().default("io-page"),
       contentPath: z.string().default(""), // subdir inside branch, if any
       enabled: z.boolean().default(true),

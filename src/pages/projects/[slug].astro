@@ -1,0 +1,143 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Oscilloscope from "../../components/islands/Oscilloscope.tsx";
+
+export async function getStaticPaths() {
+  const projects = await getCollection("projects");
+  return projects.map((p) => ({
+    params: { slug: p.data.slug },
+    props: { project: p.data },
+  }));
+}
+
+const { project } = Astro.props;
+
+const allDevlogs = await getCollection(
+  "devlogs",
+  (entry) => entry.data.project === project.slug && !entry.data.draft
+);
+const devlogs = allDevlogs.sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const rendered = await Promise.all(
+  devlogs.map(async (entry) => {
+    const { Content } = await render(entry);
+    return { entry, Content };
+  })
+);
+
+const nav = [
+  ["projects", "/#work"],
+  ["devlog", "/devlog"],
+  ["music", "/music"],
+  ["cv", "/cv"],
+];
+---
+<Base title={project.title} description={project.tagline} accent={project.accent}>
+  <nav class="shell nav">
+    <a href="/" class="mark">KV</a>
+    <ul>
+      {nav.map(([label, href]) => (
+        <li><a href={href}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <header class="shell project-hero">
+    <span class="coord">{project.status}</span>
+    <h1>{project.title}</h1>
+    <p class="lede">{project.tagline}</p>
+    <ul class="stack">
+      {project.stack.map((s: string) => <li>{s}</li>)}
+    </ul>
+    <div class="project-links">
+      <a href={project.repo}>repo →</a>
+      {project.demo && <a href={project.demo}>demo →</a>}
+    </div>
+    <div class="project-scope">
+      <Oscilloscope client:visible mode="wave" accent={project.accent} height={120} />
+    </div>
+  </header>
+
+  <section class="shell" id="devlog-stream">
+    <div class="section-head">
+      <span class="coord">02 / DEVLOG</span>
+      <h2>Build log</h2>
+    </div>
+
+    {rendered.length === 0 ? (
+      <p class="empty coord">// no devlogs yet for this project</p>
+    ) : (
+      <ul class="stream">
+        {rendered.map(({ entry, Content }) => (
+          <li class="entry">
+            <div class="entry-meta coord">
+              <time datetime={entry.data.date.toISOString()}>
+                {entry.data.date.toISOString().slice(0, 10)}
+              </time>
+              {entry.data.tags.length > 0 && (
+                <ul class="tags">
+                  {entry.data.tags.map((t: string) => <li>{t}</li>)}
+                </ul>
+              )}
+            </div>
+            <h3>{entry.data.title}</h3>
+            <div class="entry-body">
+              <Content />
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Base>
+
+<style>
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    border-bottom: var(--border);
+  }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
+  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav ul a:hover { color: var(--accent); }
+
+  .project-hero { padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 2rem; }
+  .project-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
+  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.5rem; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+  .project-links { display: flex; gap: 1.5rem; margin: 1.5rem 0; }
+  .project-links a { color: var(--accent); }
+  .project-scope {
+    margin-top: 2rem; border: var(--border); border-radius: var(--radius);
+    background: var(--bg-sunken); overflow: hidden;
+    box-shadow: 0 0 60px -30px var(--accent-glow);
+  }
+
+  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
+  .section-head h2 { font-size: var(--step-2); }
+
+  .stream { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
+  .entry {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    padding: 1.5rem;
+  }
+  .entry-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+  .entry-meta .tags { list-style: none; display: flex; gap: 0.4rem; }
+  .entry-meta .tags li { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); }
+  .entry h3 { font-size: var(--step-1); margin-bottom: 0.75rem; }
+  .entry-body { max-width: var(--measure); color: var(--ink-dim); }
+  .entry-body :global(a) { color: var(--accent); }
+  .entry-body :global(pre) {
+    background: var(--bg-sunken); border: var(--border); border-radius: var(--radius);
+    padding: 1rem; overflow-x: auto;
+  }
+
+  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+</style>

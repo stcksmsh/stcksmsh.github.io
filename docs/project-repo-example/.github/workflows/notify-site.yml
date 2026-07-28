@@ -13,7 +13,7 @@ jobs:
           curl -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.SITE_DISPATCH_TOKEN }}" \
-            https://api.github.com/repos/kostavukicevic/kostavukicevic.github.io/dispatches \
+            https://api.github.com/repos/stcksmsh/stcksmsh.github.io/dispatches \
             -d '{"event_type":"devlog-updated"}'
 # SITE_DISPATCH_TOKEN = a fine-grained PAT with "contents:write" (or just
 # repo dispatch) scope on the site repo, stored as a secret in THIS repo.

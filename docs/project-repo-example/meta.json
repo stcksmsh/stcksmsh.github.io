@@ -4,7 +4,7 @@
   "tagline": "Minimal hydration tracker for Android — Jetpack Compose, no ads, no accounts.",
   "status": "active",
   "stack": ["Kotlin", "Jetpack Compose", "StateFlow"],
-  "repo": "https://github.com/kostavukicevic/Kap",
+  "repo": "https://github.com/stcksmsh/Kap",
   "accent": [0.72, 0.19, 45],
   "featured": true,
   "order": 0

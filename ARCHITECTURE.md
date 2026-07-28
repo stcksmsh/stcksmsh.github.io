@@ -1,4 +1,4 @@
-# kostavukicevic.github.io — architecture & direction
+# stcksmsh.github.io — architecture & direction
 
 Personal site: CV + project showcase + music + per-project devlogs.
 Static (GitHub Pages, no DB, no backend). Astro + React islands.
