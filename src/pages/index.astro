@@ -30,10 +30,17 @@ const nav = [
   ["music", "/music"],
   ["cv", "/cv"],
 ];
+
+// Signature hero track(s) — self-hosted so the hero canvas can react to real
+// playback (SoundCloud/Bandcamp embeds are iframes and can't feed a Web
+// Audio analyser). Add files to public/audio/ and an entry here; only the
+// first is wired up for now. Empty by default until real files exist.
+const heroTracks: { title: string; src: string }[] = [];
+const heroTrack = heroTracks[0];
 ---
 <Base title="Kosta Vukićević">
   <nav class="shell nav">
-    <a href="/" class="mark">KV</a>
+    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
     <ul>
       {nav.map(([label, href]) => (
         <li><a href={href}>{label}</a></li>
@@ -43,15 +50,29 @@ const nav = [
 
   <header class="shell hero">
     <div class="hero-scope">
-      <Oscilloscope client:load mode="lissajous" ratio={[3, 2]} height={480} />
+      <Oscilloscope
+        client:load
+        mode="lissajous"
+        ratio={[3, 2]}
+        height={480}
+        audioSrc={heroTrack?.src}
+        trackTitle={heroTrack?.title}
+      />
     </div>
     <div class="hero-copy">
-      <span class="coord">SIG · BELGRADE · 44.81°N 20.46°E</span>
-      <h1>KOSTA<br/>VUKIĆEVIĆ</h1>
+      <span class="eyebrow coord">SOFTWARE / SYSTEMS / SOUND</span>
+      <h1>BUILD<br/><span class="thin">THE</span> <em>SIGNAL</em></h1>
       <p class="lede">
-        Software engineer at Rivian·VW. Systems, Android, and music —
-        signal traced across every layer from microkernel to melody.
+        Engineer at <b>Rivian·VW</b>. I make <b>Android systems</b>,
+        <b>tools that ship</b>, and <b>music that reacts</b>. This is where
+        the code and the sound live together.
       </p>
+      <div class="status">
+        <span>LOC: <b>BELGRADE</b></span>
+        <span>ROLE: <b>SWE · ANDROID</b></span>
+        <span>STACK: <b>KOTLIN / GO / REACT</b></span>
+        <span class="live">{projects.length} PROJECTS ACTIVE</span>
+      </div>
     </div>
   </header>
 
@@ -137,10 +158,14 @@ const nav = [
     background: color-mix(in oklch, var(--bg) 70%, transparent);
     border-bottom: var(--border);
   }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
+  .mark-dot { color: var(--accent); }
   .nav ul { display: flex; gap: 1.5rem; list-style: none; }
   .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
   .nav ul a:hover { color: var(--accent); }
+  @media (max-width: 620px) {
+    .nav ul { display: none; }
+  }
 
   .hero { padding-top: clamp(2rem, 6vw, 6rem); }
   .hero-scope {
@@ -149,12 +174,29 @@ const nav = [
     box-shadow: 0 0 80px -30px var(--accent-glow);
   }
   .hero-copy { margin-top: 2rem; }
-  .hero-copy h1 {
-    font-size: var(--hero); letter-spacing: -0.03em; margin: 0.5rem 0 1.5rem;
-    background: linear-gradient(100deg, var(--ink), var(--accent));
-    -webkit-background-clip: text; background-clip: text; color: transparent;
+  .eyebrow {
+    display: flex; align-items: center; gap: 0.9rem;
+    color: var(--accent); letter-spacing: 0.22em; margin-bottom: 1.4rem;
   }
-  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+  .eyebrow::before { content: ""; width: 2.2rem; height: 2px; background: var(--accent); }
+  .hero-copy h1 {
+    font-size: var(--hero); line-height: 0.92; letter-spacing: -0.02em;
+    text-transform: uppercase; margin: 0.5rem 0 1.5rem;
+  }
+  .hero-copy h1 .thin { font-weight: 400; color: var(--ink-dim); }
+  .hero-copy h1 em { font-style: normal; color: var(--accent); }
+  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); margin-bottom: 1.6rem; }
+  .lede b { color: var(--ink); font-weight: 500; }
+
+  .status {
+    display: flex; flex-wrap: wrap; gap: 0; border: var(--border);
+    font-family: var(--font-mono); font-size: var(--step--1); width: fit-content; max-width: 100%;
+  }
+  .status span { padding: 0.6rem 1rem; border-right: var(--border); color: var(--ink-dim); letter-spacing: 0.06em; white-space: nowrap; }
+  .status span:last-child { border-right: 0; }
+  .status span b { color: var(--accent); font-weight: 500; }
+  .status .live { color: var(--accent-cyan); }
+  .status .live::before { content: "● "; }
 
   .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
   .section-head h2 { font-size: var(--step-2); }
@@ -189,4 +231,27 @@ const nav = [
   .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
   .track-embed { border-radius: var(--radius); overflow: hidden; }
   .track-embed iframe { display: block; border: 0; }
+
+  /* Player strip is rendered by the Oscilloscope React island, so these
+     rules must be :global() — Astro's scoped-style attribute never reaches
+     into client-hydrated island markup. */
+  :global(.oscilloscope-player) {
+    display: flex; align-items: center; gap: 1.1rem;
+    border-top: var(--border); background: var(--bg-raise);
+    padding: 0.9rem 1.1rem;
+  }
+  :global(.oscilloscope-playbtn) {
+    width: 2.75rem; height: 2.75rem; flex-shrink: 0; border: 0; cursor: pointer;
+    background: var(--accent); color: var(--bg); font-size: 1rem;
+    display: grid; place-items: center; font-family: var(--font-mono);
+    transition: transform 0.15s var(--ease-scope);
+  }
+  :global(.oscilloscope-playbtn:hover) { transform: scale(1.06); }
+  :global(.oscilloscope-playbtn:active) { transform: scale(0.94); }
+  :global(.oscilloscope-ptext) {
+    font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-dim); letter-spacing: 0.05em;
+  }
+  :global(.oscilloscope-ptext b) {
+    display: block; color: var(--ink); font-size: var(--step-0); letter-spacing: 0.02em; margin-bottom: 0.2rem;
+  }
 </style>

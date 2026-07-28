@@ -37,7 +37,7 @@ const nav = [
 ---
 <Base title={project.title} description={project.tagline} accent={project.accent}>
   <nav class="shell nav">
-    <a href="/" class="mark">KV</a>
+    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
     <ul>
       {nav.map(([label, href]) => (
         <li><a href={href}>{label}</a></li>
@@ -102,10 +102,14 @@ const nav = [
     background: color-mix(in oklch, var(--bg) 70%, transparent);
     border-bottom: var(--border);
   }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
+  .mark-dot { color: var(--accent); }
   .nav ul { display: flex; gap: 1.5rem; list-style: none; }
   .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
   .nav ul a:hover { color: var(--accent); }
+  @media (max-width: 620px) {
+    .nav ul { display: none; }
+  }
 
   .project-hero { padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 2rem; }
   .project-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }

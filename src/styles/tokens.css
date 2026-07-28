@@ -7,28 +7,28 @@
 
 :root {
   /* ── Substrate ─────────────────────────────────────────────────
-     Not #000 — a desaturated blue-black so accents glow against it. */
-  --bg:        oklch(0.15 0.02 260);
-  --bg-raise:  oklch(0.19 0.025 260);   /* cards, raised surfaces */
-  --bg-sunken: oklch(0.12 0.02 260);    /* wells, code blocks */
-  --grid-line: oklch(0.28 0.02 260 / 0.5);
-  --hairline:  oklch(0.35 0.015 260 / 0.6);
+     Not #000 — a desaturated violet-black so accents glow against it. */
+  --bg:        oklch(0.15 0.02 289);
+  --bg-raise:  oklch(0.19 0.03 289);    /* cards, raised surfaces */
+  --bg-sunken: oklch(0.12 0.02 289);    /* wells, code blocks */
+  --grid-line: oklch(0.28 0.04 289 / 0.5);
+  --hairline:  oklch(0.35 0.03 289 / 0.6);
 
   /* ── Ink ─────────────────────────────────────────────────────── */
-  --ink:       oklch(0.94 0.01 260);    /* primary text */
-  --ink-dim:   oklch(0.70 0.015 260);   /* secondary */
-  --ink-faint: oklch(0.52 0.02 260);    /* captions, coordinate labels */
+  --ink:       oklch(0.945 0.016 294);  /* primary text */
+  --ink-dim:   oklch(0.643 0.048 294);  /* secondary */
+  --ink-faint: oklch(0.52 0.03 294);    /* captions, coordinate labels */
 
   /* ── House accents (non-project surfaces) ──────────────────────
      The Justice/synth triad. Equal chroma = equal visual weight. */
-  --accent-orange:  oklch(0.72 0.19 45);   /* site primary */
-  --accent-cyan:    oklch(0.80 0.15 195);
-  --accent-magenta: oklch(0.68 0.24 335);
+  --accent-orange:  oklch(0.686 0.205 34);   /* site primary — vermilion */
+  --accent-cyan:    oklch(0.839 0.115 199);
+  --accent-magenta: oklch(0.641 0.255 308);
 
   /* Live accent — retinted per-project page via inline --accent-l/c/h */
-  --accent-l: 0.72;
-  --accent-c: 0.19;
-  --accent-h: 45;
+  --accent-l: 0.686;
+  --accent-c: 0.205;
+  --accent-h: 34;
   --accent:      oklch(var(--accent-l) var(--accent-c) var(--accent-h));
   --accent-soft: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.15);
   --accent-glow: oklch(var(--accent-l) var(--accent-c) var(--accent-h) / 0.4);
@@ -39,13 +39,13 @@
   --font-display: "Chakra Petch", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
 
-  /* Fluid scale — maximalism lives at the top end (hero up to ~14vw) */
+  /* Fluid scale — maximalism lives at the top end (hero up to ~118px) */
   --step--1: clamp(0.78rem, 0.74rem + 0.2vw, 0.9rem);
   --step-0:  clamp(0.95rem, 0.9rem + 0.25vw, 1.1rem);
   --step-1:  clamp(1.2rem, 1.05rem + 0.7vw, 1.6rem);
   --step-2:  clamp(1.6rem, 1.3rem + 1.5vw, 2.6rem);
   --step-3:  clamp(2.2rem, 1.6rem + 3vw, 4.5rem);
-  --hero:    clamp(3rem, 1rem + 12vw, 14rem);
+  --hero:    clamp(3rem, 1rem + 9vw, 7.4rem);
 
   /* ── Grid & rhythm ─────────────────────────────────────────── */
   --gap: clamp(1rem, 0.6rem + 2vw, 2.5rem);

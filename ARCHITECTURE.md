@@ -22,7 +22,7 @@ Nothing runs on a server. This shapes every decision below.
 | Generator          | **Astro**                       | Zero-JS by default, islands for the interactive bits, type-safe content collections. Fits your React muscle without site-wide hydration cost. |
 | Interactivity      | **React islands** (`client:*`)  | Oscilloscope, audio player, devlog filter — only these ship JS. |
 | Content federation | **build-time fetch**            | Devlogs live in each project's `io-page` branch; pulled + stitched before build. |
-| Music              | **embeds** (SoundCloud/Bandcamp)| No self-hosted audio; embed IDs in a `music` data collection. |
+| Music              | **embeds** (SoundCloud/Bandcamp)| No self-hosted audio for the catalog; embed IDs in a `music` data collection. Exception: a small curated set of full-length tracks lives in `public/audio/` specifically to drive the homepage hero's real-time audio-reactive canvas (SoundCloud/Bandcamp iframes can't feed a Web Audio analyser). |
 | Search/filter      | **Fuse.js** on a build-time JSON| Client-side fuzzy filter, no backend. |
 | Deploy             | **GitHub Actions**              | `withastro/action` → Pages. Not Jekyll's free build, but worth it. |
 
@@ -76,17 +76,23 @@ work, Web Audio, color-theory math aren't features bolted on — they're the
 visual grammar. Grid = time axis. Accent = wavelength. Motion = periodic
 (sine), never eased decoration.
 
-- **Substrate**: blue-black `oklch(0.15 0.02 260)` — not pure black, so
-  accents glow.
+- **Substrate**: violet-black `oklch(0.15 0.02 289)` — not pure black, so
+  accents glow. A faint full-viewport grain texture sits behind all content
+  so the flat OKLCH fill never reads as a solid digital fill.
 - **Per-project accent**: each `meta.json` carries `accent` as an OKLCH
   triple `[L, C, H]`. The whole project page retints — borders, links, scope,
   glow. Maximalism *and* organizing logic in one move. OKLCH (you know
   CIE LAB/LCh) keeps chroma perceptually equal so no project accidentally
   shouts louder than another.
-- **House triad**: orange, cyan, magenta.
+- **House triad**: vermilion `oklch(0.686 0.205 34)`, cyan
+  `oklch(0.839 0.115 199)`, magenta `oklch(0.641 0.255 308)`.
 - **Type**: Chakra Petch display + JetBrains Mono body (devlogs read like
-  a terminal log). Hero
-  runs to ~14vw — maximalism lives at the top of the scale.
+  a terminal log). Hero heading is uppercase, split into a dim `.thin` word
+  and an accent-colored `<em>` word, sized up to ~118px — maximalism lives
+  at the top of the scale, not a raw viewport-scaled wall of type.
+- **Status-line bar**: a bordered mono cell row (location / role / stack /
+  live project count) under the hero copy — data as texture, not just a
+  coordinate caption.
 - **Motion**: one shared sine clock (`useAudioClock`) so the whole site
   breathes at one frequency. Coherence separates maximalist from cluttered.
   `prefers-reduced-motion` freezes the sine to a static trace —
@@ -95,8 +101,12 @@ visual grammar. Grid = time axis. Accent = wavelength. Motion = periodic
   a thin per-project accent line. Everywhere else, restraint.
 
 **Signature element**: the live oscilloscope (`Oscilloscope.tsx`) — Lissajous
-or waveform, accent-reactive. It's the one memorable thing; everything around
-it stays quiet.
+or waveform, accent-reactive. On the homepage it's genuinely audio-reactive:
+a play button + track title (the "player strip") feeds a Web Audio
+`AnalyserNode` from a self-hosted track, and the trace's amplitude, Lissajous
+ratio, and line weight respond to the real frequency spectrum in real time.
+Everywhere else (`/projects/[slug]`, `/music`) it stays in its plain ambient
+mode. It's the one memorable thing; everything around it stays quiet.
 
 ## 5. Routes
 
@@ -110,26 +120,30 @@ it stays quiet.
 
 ## 6. What's built vs. what's next
 
-**Built (this scaffold):**
+**Built:**
 - Federation script + manifest + Zod contracts
 - Content collections (projects, devlogs, cv, music)
-- Token system (СИНТЕЗА), global styles, oscilloscope grid
-- `Oscilloscope` island + shared `useAudioClock`
-- Homepage (hero + accent-tinted project cards)
+- Token system (СИНТЕЗА), global styles, oscilloscope grid, grain texture
+- `Oscilloscope` island (ambient + audio-reactive modes) + shared `useAudioClock`
+- Homepage — hero (audio-reactive scope, status-line bar, player strip),
+  accent-tinted project cards, condensed music teaser linking to `/music`
+- `/projects/[slug]` — dynamic route, accent retint, devlog stream
+- `/music` — embed collection + SoundCloud/Bandcamp player page
 - Deploy workflow + cross-repo dispatch example
 
 **Next (in priority order):**
-1. `/projects/[slug]` — dynamic route, accent retint, devlog stream.
-2. `/devlog` — global feed + Fuse.js filter island.
-3. `/music` — embed collection + full visualizer island (your Web Audio work).
-4. `/cv` — native CV content + print stylesheet.
-5. Fix hero lede contrast (currently dim-on-dark below AA).
-6. `giscus` for devlog comments (optional — needs GitHub Discussions).
+1. `/devlog` — global feed + Fuse.js filter island.
+2. `/cv` — native CV content + print stylesheet.
+3. Fix hero lede contrast (currently dim-on-dark below AA).
+4. `giscus` for devlog comments (optional — needs GitHub Discussions).
 
 ## 7. Gotchas
 
-- Repo size: GitHub soft-caps ~1GB, 100MB/file. Embeds (not self-hosted
-  audio) keep you clear.
+- Repo size: GitHub soft-caps ~1GB, 100MB/file. The music *catalog* stays on
+  embeds, not self-hosted audio, to keep you clear of this. The hero's
+  self-hosted track(s) in `public/audio/` are a deliberate, small exception —
+  keep it to a handful of compressed full-length files, not the whole
+  discography.
 - API rate limit: `federate.ts`'s Contents API calls are unauthenticated
   (60/hr). Pass `GITHUB_TOKEN` in CI to raise it (already wired in deploy.yml).
 - `src/content/projects` and `src/content/devlogs` are **generated** — add

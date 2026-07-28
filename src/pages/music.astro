@@ -21,7 +21,7 @@ const nav = [
 ---
 <Base title="Music — Kosta Vukićević" description="Tracks, embeds, and the oscilloscope work behind them.">
   <nav class="shell nav">
-    <a href="/" class="mark">KV</a>
+    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
     <ul>
       {nav.map(([label, href]) => (
         <li><a href={href}>{label}</a></li>
@@ -98,10 +98,14 @@ const nav = [
     background: color-mix(in oklch, var(--bg) 70%, transparent);
     border-bottom: var(--border);
   }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
+  .mark-dot { color: var(--accent); }
   .nav ul { display: flex; gap: 1.5rem; list-style: none; }
   .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
   .nav ul a:hover { color: var(--accent); }
+  @media (max-width: 620px) {
+    .nav ul { display: none; }
+  }
 
   .music-hero { padding-top: clamp(2rem, 6vw, 6rem); }
   .music-scope {
