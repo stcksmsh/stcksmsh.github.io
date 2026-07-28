@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import Oscilloscope from "../components/islands/Oscilloscope.tsx";
 import { getCollection } from "astro:content";
+import { musicEmbedSrc } from "../lib/embeds";
 
 // Federated projects — may be empty on first run before manifest repos exist.
 let projects: any[] = [];
@@ -10,6 +11,17 @@ try {
   projects = all
     .map((p) => p.data)
     .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
+} catch {}
+
+// Home shows a condensed teaser — full catalog lives on /music.
+const TEASER_COUNT = 3;
+let tracks: any[] = [];
+try {
+  const all = await getCollection("music");
+  tracks = all
+    .map((t) => t.data)
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+    .slice(0, TEASER_COUNT);
 } catch {}
 
 const nav = [
@@ -74,6 +86,47 @@ const nav = [
       </ul>
     )}
   </section>
+
+  <section class="shell" id="sound" style="margin-top: 5rem;">
+    <div class="section-head">
+      <span class="coord">02 / SOUND</span>
+      <h2>Selected sounds</h2>
+      <a class="more" href="/music">all tracks →</a>
+    </div>
+
+    {tracks.length === 0 ? (
+      <p class="empty coord">
+        // no tracks yet — add entries to <code>src/content/music/*.json</code>
+      </p>
+    ) : (
+      <ul class="tracks">
+        {tracks.map((t) => (
+          <li
+            class="track"
+            style={t.accent ? `--accent-l:${t.accent[0]};--accent-c:${t.accent[1]};--accent-h:${t.accent[2]};` : ""}
+          >
+            <div class="track-meta coord">
+              <span>{t.source}</span>
+              {t.year && <span>{t.year}</span>}
+            </div>
+            <h3>{t.title}</h3>
+            <div class="track-embed">
+              <iframe
+                loading="lazy"
+                width="100%"
+                height={t.source === "soundcloud" ? 166 : 300}
+                scrolling="no"
+                frameborder="no"
+                allow="autoplay"
+                title={t.title}
+                src={musicEmbedSrc(t)}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
 </Base>
 
 <style>
@@ -105,6 +158,8 @@ const nav = [
 
   .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
   .section-head h2 { font-size: var(--step-2); }
+  .section-head .more { margin-left: auto; color: var(--ink-dim); font-size: var(--step--1); }
+  .section-head .more:hover { color: var(--accent); }
 
   .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   .card {
@@ -122,4 +177,16 @@ const nav = [
 
   .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
   .empty code { color: var(--accent); }
+
+  .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .track {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    padding: 1.5rem;
+    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
+  }
+  .track:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); }
+  .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
+  .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
+  .track-embed { border-radius: var(--radius); overflow: hidden; }
+  .track-embed iframe { display: block; border: 0; }
 </style>
