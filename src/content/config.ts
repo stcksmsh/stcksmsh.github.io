@@ -32,7 +32,7 @@ const devlogs = defineCollection({
 const cv = defineCollection({
   type: "content",
   schema: z.object({
-    section: z.enum(["experience", "education", "skills", "awards"]),
+    section: z.enum(["experience", "education", "skills", "certifications", "awards"]),
     title: z.string(),
     org: z.string().optional(),
     start: z.string().optional(),
