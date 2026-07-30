@@ -72,7 +72,7 @@ const nav = [
     ) : (
       <ul class="stream">
         {rendered.map(({ entry, Content }) => (
-          <li class="entry">
+          <li class="entry" id={entry.id.replace(/\.md$/, "").replace(/\//g, "--")}>
             <div class="entry-meta coord">
               <time datetime={entry.data.date.toISOString()}>
                 {entry.data.date.toISOString().slice(0, 10)}

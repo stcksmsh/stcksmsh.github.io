@@ -1,0 +1,124 @@
+---
+import Base from "../layouts/Base.astro";
+import DevlogFeed from "../components/islands/DevlogFeed.tsx";
+import { getCollection } from "astro:content";
+import type { DevlogFeedEntry } from "../components/islands/DevlogFeed.tsx";
+
+let entries: DevlogFeedEntry[] = [];
+try {
+  const projects = await getCollection("projects");
+  const byslug = new Map(projects.map((p) => [p.data.slug, p.data]));
+
+  const devlogs = await getCollection("devlogs", (e) => !e.data.draft);
+  entries = devlogs
+    .map((entry) => {
+      const project = byslug.get(entry.data.project);
+      const anchor = entry.id.replace(/\.md$/, "").replace(/\//g, "--");
+      const excerpt = entry.body
+        .replace(/^#.*$/m, "")
+        .replace(/[#*`_>]/g, "")
+        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 180);
+      return {
+        id: entry.id,
+        title: entry.data.title,
+        date: entry.data.date.toISOString(),
+        tags: entry.data.tags,
+        excerpt: excerpt.length === 180 ? excerpt + "…" : excerpt,
+        href: `/projects/${entry.data.project}#${anchor}`,
+        project: {
+          slug: entry.data.project,
+          title: project?.title ?? entry.data.project,
+          accent: project?.accent,
+        },
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+} catch {}
+
+const nav = [
+  ["projects", "/#work"],
+  ["devlog", "/devlog"],
+  ["music", "/music"],
+  ["cv", "/cv"],
+];
+---
+<Base title="Devlog — Kosta Vukićević" description="Cross-project build log, reverse-chronological.">
+  <nav class="shell nav">
+    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
+    <ul>
+      {nav.map(([label, href]) => (
+        <li><a href={href}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <header class="shell devlog-hero">
+    <span class="coord">// DEVLOG</span>
+    <h1>What's shipping</h1>
+    <p class="lede">Reverse-chron pulse across every project on this site — pulled straight from each repo's <code>io-page</code> branch at build time.</p>
+  </header>
+
+  <section class="shell" style="margin-top: 3rem;">
+    {entries.length === 0 ? (
+      <p class="empty coord">// no devlog entries yet — push one to a project's io-page branch</p>
+    ) : (
+      <DevlogFeed client:load entries={entries} />
+    )}
+  </section>
+</Base>
+
+<style>
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    border-bottom: var(--border);
+  }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
+  .mark-dot { color: var(--accent); }
+  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
+  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav ul a:hover { color: var(--accent); }
+  @media (max-width: 620px) {
+    .nav ul { display: none; }
+  }
+
+  .devlog-hero { padding-top: clamp(2rem, 5vw, 4rem); }
+  .devlog-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
+  .devlog-hero .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+  .devlog-hero .lede code { color: var(--accent); font-size: 0.85em; }
+
+  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+
+  /* DevlogFeed is a hydrated React island — Astro's scoped-style attribute
+     never reaches into island markup, so these must stay :global(). */
+  :global(.devlog-search) {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+  }
+  :global(.devlog-search input) {
+    flex: 1; background: var(--bg-raise); border: var(--border); border-radius: var(--radius);
+    color: var(--ink); font-family: var(--font-mono); font-size: var(--step-0);
+    padding: 0.75rem 1rem;
+  }
+  :global(.devlog-search input:focus) { border-color: var(--accent); outline: none; }
+  :global(.devlog-search input::placeholder) { color: var(--ink-faint); }
+  :global(.devlog-count) { white-space: nowrap; }
+
+  :global(.stream) { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
+  :global(.entry) {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    padding: 1.5rem;
+  }
+  :global(.entry-meta) { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
+  :global(.entry-meta .project-chip) { color: var(--accent); }
+  :global(.entry-meta .tags) { list-style: none; display: flex; gap: 0.4rem; }
+  :global(.entry-meta .tags li) { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); }
+  :global(.entry h3) { font-size: var(--step-1); margin-bottom: 0.75rem; }
+  :global(.entry h3 a) { color: var(--ink); }
+  :global(.entry h3 a:hover) { color: var(--accent); }
+  :global(.entry-excerpt) { max-width: var(--measure); color: var(--ink-dim); }
+</style>

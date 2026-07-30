@@ -84,7 +84,7 @@ async function main() {
     await writeFile(`${outProjects}/${meta.slug}.json`, JSON.stringify(meta, null, 2));
 
     // pull its devlogs into a per-project folder
-    const files = await listDevlogs(p.repo, p.branch, p.path);
+    const files = await listDevlogs(p.repo, p.branch, p.contentPath);
     if (files.length) await mkdir(`${outDevlogs}/${meta.slug}`, { recursive: true });
     for (const name of files) {
       const md = await fetchText(`${RAW}/${p.repo}/${base}/devlogs/${name}`);

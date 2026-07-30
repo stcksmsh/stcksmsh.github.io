@@ -129,13 +129,15 @@ mode. It's the one memorable thing; everything around it stays quiet.
   accent-tinted project cards, condensed music teaser linking to `/music`
 - `/projects/[slug]` — dynamic route, accent retint, devlog stream
 - `/music` — embed collection + SoundCloud/Bandcamp player page
+- `/devlog` — global reverse-chron feed (`DevlogFeed` island) with a
+  client-side Fuse.js fuzzy filter across title/excerpt/tags/project.
+  Cross-links to per-project entries via anchor ids on `/projects/[slug]`.
 - Deploy workflow + cross-repo dispatch example
 
 **Next (in priority order):**
-1. `/devlog` — global feed + Fuse.js filter island.
-2. `/cv` — native CV content + print stylesheet.
-3. Fix hero lede contrast (currently dim-on-dark below AA).
-4. `giscus` for devlog comments (optional — needs GitHub Discussions).
+1. `/cv` — native CV content + print stylesheet.
+2. Fix hero lede contrast (currently dim-on-dark below AA).
+3. `giscus` for devlog comments (optional — needs GitHub Discussions).
 
 ## 7. Gotchas
 
