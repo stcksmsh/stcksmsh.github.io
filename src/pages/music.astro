@@ -61,7 +61,18 @@ const nav = [
             </div>
             <h3>{t.title}</h3>
             <div class="track-embed">
-              {t.source === "soundcloud" ? (
+              {t.source === "soundcloud" && t.envelope ? (
+                <Oscilloscope
+                  client:visible
+                  mode="lissajous"
+                  ratio={[3, 2]}
+                  height={200}
+                  accent={t.accent}
+                  scEmbedSrc={musicEmbedSrc(t)}
+                  envelopeSrc={t.envelope}
+                  trackTitle={t.title}
+                />
+              ) : t.source === "soundcloud" ? (
                 <iframe
                   loading="lazy"
                   width="100%"

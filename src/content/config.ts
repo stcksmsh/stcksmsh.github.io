@@ -49,6 +49,10 @@ const music = defineCollection({
     embedId: z.string(),      // just the ID/url fragment — no scraping
     year: z.number().optional(),
     accent: z.tuple([z.number(), z.number(), z.number()]).optional(), // OKLCH [L C H]
+    // path under /public to a precomputed feature envelope (see
+    // scripts/analyze-track.py) — when present, the track gets a
+    // position-synced reactive Oscilloscope instead of a plain embed.
+    envelope: z.string().optional(),
   }),
 });
 

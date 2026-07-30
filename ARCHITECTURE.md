@@ -138,13 +138,21 @@ mode. It's the one memorable thing; everything around it stays quiet.
   awards), print stylesheet overrides the design tokens directly for a clean
   black-on-white printable page
 - `--ink-dim` bumped to 7.3:1 contrast against `--bg` (was 5.85:1)
+- SoundCloud position-synced Oscilloscope: `scripts/analyze-track.py` computes
+  a precomputed feature envelope (RMS/low/high energy, 10 samples/sec) from a
+  track's own master file — the iframe's live audio is unreachable
+  (cross-origin), so this is analysed offline once instead. `Oscilloscope`'s
+  new `scEmbedSrc`/`envelopeSrc` mode loads the SoundCloud Widget API, binds
+  `PLAY_PROGRESS` for real playback position, and looks up/interpolates the
+  envelope by that position — genuinely audio-derived, no live API dependency.
+  `/music` uses it automatically for any track with an `envelope` field (see
+  `src/content/music/sigsegv.json` for the reference example + generated
+  `public/audio-envelopes/sigsegv.json`).
 
 **Next:**
 1. `giscus` for devlog comments (optional — needs GitHub Discussions).
-2. SoundCloud embed sync: wire `Oscilloscope`'s ambient mode to the Widget
-   API's position events so the trace moves with real playback timing (not
-   audio-reactive — the iframe's audio is unreachable from the parent page —
-   but genuinely synced instead of just idling).
+2. Run `scripts/analyze-track.py` against the rest of the SoundCloud catalog
+   so every track gets the reactive scope, not just SIGSEGV.
 
 ## 7. Gotchas
 
