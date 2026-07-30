@@ -132,12 +132,19 @@ mode. It's the one memorable thing; everything around it stays quiet.
 - `/devlog` — global reverse-chron feed (`DevlogFeed` island) with a
   client-side Fuse.js fuzzy filter across title/excerpt/tags/project.
   Cross-links to per-project entries via anchor ids on `/projects/[slug]`.
-- Deploy workflow + cross-repo dispatch example
+- Deploy workflow + cross-repo dispatch example (workflow_dispatch, scoped to
+  Actions:write only — see notify-site.yml in each project's io-page branch)
+- `/cv` — native CV content (experience/education/skills/certifications/
+  awards), print stylesheet overrides the design tokens directly for a clean
+  black-on-white printable page
+- `--ink-dim` bumped to 7.3:1 contrast against `--bg` (was 5.85:1)
 
-**Next (in priority order):**
-1. `/cv` — native CV content + print stylesheet.
-2. Fix hero lede contrast (currently dim-on-dark below AA).
-3. `giscus` for devlog comments (optional — needs GitHub Discussions).
+**Next:**
+1. `giscus` for devlog comments (optional — needs GitHub Discussions).
+2. SoundCloud embed sync: wire `Oscilloscope`'s ambient mode to the Widget
+   API's position events so the trace moves with real playback timing (not
+   audio-reactive — the iframe's audio is unreachable from the parent page —
+   but genuinely synced instead of just idling).
 
 ## 7. Gotchas
 
