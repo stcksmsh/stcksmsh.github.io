@@ -3,10 +3,10 @@ name: build & deploy
 on:
   push:
     branches: [main]
-  # Project repos fire this via repository_dispatch on their io-page push,
-  # so a new devlog anywhere rebuilds the site.
-  repository_dispatch:
-    types: [devlog-updated]
+  # Project repos fire this via the workflow_dispatch API on their io-page
+  # push, so a new devlog anywhere rebuilds the site. workflow_dispatch (not
+  # repository_dispatch) specifically so their PAT only needs "Actions:
+  # write" scope on this repo, not "Contents: write".
   workflow_dispatch:
 
 permissions:
