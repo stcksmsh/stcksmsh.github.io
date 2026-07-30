@@ -3,6 +3,36 @@
   "owner": "stcksmsh",
   "projects": [
     {
+      "repo": "stcksmsh/Mouthpiece",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
+      "repo": "stcksmsh/deaf-composition",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
+      "repo": "stcksmsh/aegis",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
+      "repo": "stcksmsh/skilltree",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
+      "repo": "stcksmsh/EmojiType",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
+    },
+    {
       "repo": "stcksmsh/Kap",
       "branch": "io-page",
       "contentPath": "",
@@ -12,7 +42,7 @@
       "repo": "stcksmsh/BeogradPlusPlus",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": false
+      "enabled": true
     }
   ]
 }
