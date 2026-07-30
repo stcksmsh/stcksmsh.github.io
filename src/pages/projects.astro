@@ -1,0 +1,105 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCollection } from "astro:content";
+
+let projects: any[] = [];
+try {
+  const all = await getCollection("projects");
+  projects = all
+    .map((p) => p.data)
+    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
+} catch {}
+
+const nav = [
+  ["projects", "/#work"],
+  ["music", "/#sound"],
+  ["devlog", "/#devlog"],
+  ["cv", "/cv"],
+];
+---
+<Base title="Projects — Kosta Vukićević" description="Everything federated from the io-page branches.">
+  <nav class="shell nav">
+    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
+    <ul>
+      {nav.map(([label, href]) => (
+        <li><a href={href}>{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <header class="shell projects-hero">
+    <span class="coord">// PROJECTS</span>
+    <h1>Everything I'm building</h1>
+    <p class="lede">
+      Federated from each project's own <code>io-page</code> branch at build
+      time — see <a href="/devlog">/devlog</a> for the build log behind them.
+    </p>
+  </header>
+
+  <section class="shell" style="margin-top: 3rem;">
+    {projects.length === 0 ? (
+      <p class="empty coord">
+        // no federated projects yet — push an <code>io-page</code> branch
+        with a <code>meta.json</code> to any repo in the manifest
+      </p>
+    ) : (
+      <ul class="cards">
+        {projects.map((p) => (
+          <li
+            class="card"
+            style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
+          >
+            <a href={`/projects/${p.slug}`}>
+              <span class="card-status coord">{p.status}</span>
+              <h3>{p.title}</h3>
+              <p class="card-tag">{p.tagline}</p>
+              <ul class="stack">
+                {p.stack.slice(0, 4).map((s: string) => <li>{s}</li>)}
+              </ul>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</Base>
+
+<style>
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(8px);
+    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    border-bottom: var(--border);
+  }
+  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
+  .mark-dot { color: var(--accent); }
+  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
+  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav ul a:hover { color: var(--accent); }
+  @media (max-width: 620px) {
+    .nav ul { display: none; }
+  }
+
+  .projects-hero { padding-top: clamp(2rem, 5vw, 4rem); }
+  .projects-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
+  .projects-hero .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
+  .projects-hero .lede code { color: var(--accent); font-size: 0.85em; }
+
+  .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .card {
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
+  }
+  .card:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
+  .card a { display: block; padding: 1.5rem; color: inherit; }
+  .card a:hover { text-decoration: none; }
+  .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
+  .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
+  .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
+  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+
+  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+  .empty code { color: var(--accent); }
+</style>

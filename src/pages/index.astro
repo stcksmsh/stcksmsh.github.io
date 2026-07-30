@@ -14,20 +14,51 @@ try {
 } catch {}
 
 // Home shows a condensed teaser — full catalog lives on /music.
-const TEASER_COUNT = 3;
+const TEASER_COUNT = 6;
 let tracks: any[] = [];
 try {
   const all = await getCollection("music");
   tracks = all
-    .map((t) => t.data)
+    .map((t) => ({ id: t.id, ...t.data }))
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
     .slice(0, TEASER_COUNT);
 } catch {}
 
+// Cross-project devlog teaser — same federated data /devlog uses, condensed.
+const DEVLOG_TEASER_COUNT = 6;
+let devlogTeaser: any[] = [];
+try {
+  const projectsByslug = new Map(projects.map((p) => [p.slug, p]));
+  const allDevlogs = await getCollection("devlogs", (e: any) => !e.data.draft);
+  devlogTeaser = allDevlogs
+    .map((entry: any) => {
+      const project = projectsByslug.get(entry.data.project);
+      const anchor = entry.id.replace(/\.md$/, "").replace(/\//g, "--");
+      const excerpt = entry.body
+        .replace(/^#.*$/m, "")
+        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+        .replace(/[#*`_>]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 120);
+      return {
+        id: entry.id,
+        title: entry.data.title,
+        date: entry.data.date,
+        excerpt: excerpt.length === 120 ? excerpt + "…" : excerpt,
+        href: `/projects/${entry.data.project}#${anchor}`,
+        projectTitle: project?.title ?? entry.data.project,
+        accent: project?.accent,
+      };
+    })
+    .sort((a: any, b: any) => b.date.valueOf() - a.date.valueOf())
+    .slice(0, DEVLOG_TEASER_COUNT);
+} catch {}
+
 const nav = [
   ["projects", "/#work"],
-  ["devlog", "/devlog"],
-  ["music", "/music"],
+  ["music", "/#sound"],
+  ["devlog", "/#devlog"],
   ["cv", "/cv"],
 ];
 
@@ -80,7 +111,7 @@ const heroTrack = heroTracks[0];
   <section class="shell" id="work" style="margin-top: 5rem;">
     <div class="section-head">
       <span class="coord">01 / WORK</span>
-      <h2>Selected builds</h2>
+      <h2><a href="/projects">Selected builds <span class="arrow">→</span></a></h2>
     </div>
 
     {projects.length === 0 ? (
@@ -89,7 +120,7 @@ const heroTrack = heroTracks[0];
         with a <code>meta.json</code> to any repo in the manifest
       </p>
     ) : (
-      <ul class="cards">
+      <ul class="carousel cards">
         {projects.map((p) => (
           <li
             class="card"
@@ -112,8 +143,7 @@ const heroTrack = heroTracks[0];
   <section class="shell" id="sound" style="margin-top: 5rem;">
     <div class="section-head">
       <span class="coord">02 / SOUND</span>
-      <h2>Selected sounds</h2>
-      <a class="more" href="/music">all tracks →</a>
+      <h2><a href="/music">Selected sounds <span class="arrow">→</span></a></h2>
     </div>
 
     {tracks.length === 0 ? (
@@ -121,7 +151,7 @@ const heroTrack = heroTracks[0];
         // no tracks yet — add entries to <code>src/content/music/*.json</code>
       </p>
     ) : (
-      <ul class="tracks">
+      <ul class="carousel tracks">
         {tracks.map((t) => (
           <li
             class="track"
@@ -132,18 +162,58 @@ const heroTrack = heroTracks[0];
               {t.year && <span>{t.year}</span>}
             </div>
             <h3>{t.title}</h3>
-            <div class="track-embed">
-              <iframe
-                loading="lazy"
-                width="100%"
-                height={t.source === "soundcloud" ? 166 : 300}
-                scrolling="no"
-                frameborder="no"
-                allow="autoplay"
-                title={t.title}
-                src={musicEmbedSrc(t)}
-              />
-            </div>
+            {t.source === "soundcloud" ? (
+              <button
+                type="button"
+                class="track-play"
+                data-track={JSON.stringify({
+                  slug: t.id, title: t.title, embedId: t.embedId, accent: t.accent, envelope: t.envelope,
+                })}
+              >
+                <span class="track-play-icon">▶</span>
+                <span>Play{t.envelope ? " — reactive" : ""}</span>
+              </button>
+            ) : (
+              <div class="track-embed">
+                <iframe
+                  loading="lazy"
+                  width="100%"
+                  height="300"
+                  seamless
+                  title={t.title}
+                  src={musicEmbedSrc(t)}
+                />
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  <section class="shell" id="devlog" style="margin-top: 5rem;">
+    <div class="section-head">
+      <span class="coord">03 / DEVLOG</span>
+      <h2><a href="/devlog">What's shipping <span class="arrow">→</span></a></h2>
+    </div>
+
+    {devlogTeaser.length === 0 ? (
+      <p class="empty coord">// no devlog entries yet</p>
+    ) : (
+      <ul class="carousel devlog-teaser">
+        {devlogTeaser.map((e) => (
+          <li
+            class="dt-entry"
+            style={e.accent ? `--accent-l:${e.accent[0]};--accent-c:${e.accent[1]};--accent-h:${e.accent[2]};` : ""}
+          >
+            <a href={e.href}>
+              <div class="dt-meta coord">
+                <span>{e.projectTitle}</span>
+                <time datetime={e.date.toISOString()}>{e.date.toISOString().slice(0, 10)}</time>
+              </div>
+              <h3>{e.title}</h3>
+              <p class="dt-excerpt">{e.excerpt}</p>
+            </a>
           </li>
         ))}
       </ul>
@@ -201,16 +271,29 @@ const heroTrack = heroTracks[0];
 
   .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
   .section-head h2 { font-size: var(--step-2); }
-  .section-head .more { margin-left: auto; color: var(--ink-dim); font-size: var(--step--1); }
-  .section-head .more:hover { color: var(--accent); }
+  .section-head h2 a { color: var(--ink); text-decoration: none; }
+  .section-head h2 a:hover { color: var(--accent); }
+  .section-head h2 .arrow { color: var(--accent); }
 
-  .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  /* Horizontal scroll-snap carousel — shared shape for projects/music/devlog.
+     Each section's own class (.cards/.tracks/.devlog-teaser) sets item width. */
+  .carousel {
+    display: flex; gap: var(--gap); list-style: none;
+    overflow-x: auto; scroll-snap-type: x mandatory;
+    padding-bottom: 0.75rem; margin: 0 calc(var(--gap) * -1);
+    padding-inline: var(--gap);
+    scrollbar-width: thin; scrollbar-color: var(--hairline) transparent;
+  }
+  .carousel > li { scroll-snap-align: start; flex-shrink: 0; }
+
+  .cards > li { width: min(320px, 85vw); }
   .card {
+    height: 100%;
     border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
     transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
   }
   .card:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
-  .card a { display: block; padding: 1.5rem; color: inherit; }
+  .card a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
   .card a:hover { text-decoration: none; }
   .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
   .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
@@ -221,8 +304,9 @@ const heroTrack = heroTracks[0];
   .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
   .empty code { color: var(--accent); }
 
-  .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  .tracks > li { width: min(280px, 85vw); }
   .track {
+    height: 100%;
     border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
     padding: 1.5rem;
     transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
@@ -232,6 +316,28 @@ const heroTrack = heroTracks[0];
   .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
   .track-embed { border-radius: var(--radius); overflow: hidden; }
   .track-embed iframe { display: block; border: 0; }
+  .track-play {
+    display: flex; align-items: center; gap: 0.6rem; width: 100%;
+    background: none; border: var(--border); border-radius: var(--radius);
+    color: var(--ink); font-family: var(--font-mono); font-size: var(--step--1);
+    padding: 0.7rem 1rem; cursor: pointer; letter-spacing: 0.04em;
+    transition: border-color 0.15s var(--ease-scope), color 0.15s var(--ease-scope);
+  }
+  .track-play:hover { border-color: var(--accent); color: var(--accent); }
+  .track-play-icon { color: var(--accent); }
+
+  .devlog-teaser > li { width: min(300px, 85vw); }
+  .dt-entry {
+    height: 100%;
+    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
+  }
+  .dt-entry:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); }
+  .dt-entry a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
+  .dt-entry a:hover { text-decoration: none; }
+  .dt-meta { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--accent); margin-bottom: 0.6rem; }
+  .dt-entry h3 { font-size: var(--step-0); margin-bottom: 0.5rem; }
+  .dt-excerpt { color: var(--ink-dim); font-size: var(--step--1); }
 
   /* Player strip is rendered by the Oscilloscope React island, so these
      rules must be :global() — Astro's scoped-style attribute never reaches
@@ -256,3 +362,18 @@ const heroTrack = heroTracks[0];
     display: block; color: var(--ink); font-size: var(--step-0); letter-spacing: 0.02em; margin-bottom: 0.2rem;
   }
 </style>
+
+<script>
+  import { requestPlay } from "../lib/player-bus";
+  // View Transitions re-run page scripts on every client-side navigation —
+  // guard against stacking duplicate listeners on repeat visits home.
+  if (!(window as any).__trackPlayBound) {
+    (window as any).__trackPlayBound = true;
+    document.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest(".track-play");
+      if (!btn) return;
+      const data = JSON.parse(btn.getAttribute("data-track")!);
+      requestPlay(data);
+    });
+  }
+</script>

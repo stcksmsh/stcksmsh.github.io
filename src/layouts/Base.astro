@@ -1,5 +1,10 @@
 ---
 import "../styles/global.css";
+import { ViewTransitions } from "astro:transitions";
+import { getCollection } from "astro:content";
+import GlobalPlayer from "../components/islands/GlobalPlayer.tsx";
+import type { PlayerTrack } from "../lib/player-bus";
+
 interface Props {
   title: string;
   description?: string;
@@ -10,6 +15,22 @@ const { title, description = "Kosta Vukićević — engineer, builder, music.", 
 const accentStyle = accent
   ? `--accent-l:${accent[0]};--accent-c:${accent[1]};--accent-h:${accent[2]};`
   : "";
+
+// GlobalPlayer only controls SoundCloud tracks — Bandcamp has no equivalent
+// control API, so those stay plain per-page embeds on /music.
+let playerTracks: PlayerTrack[] = [];
+try {
+  const all = await getCollection("music");
+  playerTracks = all
+    .filter((t) => t.data.source === "soundcloud")
+    .map((t) => ({
+      slug: t.id,
+      title: t.data.title,
+      embedId: t.data.embedId,
+      accent: t.data.accent,
+      envelope: t.data.envelope,
+    }));
+} catch {}
 ---
 <!doctype html>
 <html lang="en" style={accentStyle}>
@@ -24,6 +45,7 @@ const accentStyle = accent
       href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
+    <ViewTransitions />
   </head>
   <body>
     <div class="grain"></div>
@@ -31,5 +53,6 @@ const accentStyle = accent
     <footer class="shell" style="padding: 4rem 0 2rem; margin-top: 6rem; border-top: var(--border);">
       <span class="coord">// EOF — stcksmsh.github.io — built {new Date().getFullYear()}</span>
     </footer>
+    <GlobalPlayer client:load tracks={playerTracks} transition:persist transition:name="global-player" />
   </body>
 </html>
