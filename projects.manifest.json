@@ -43,6 +43,12 @@
       "branch": "io-page",
       "contentPath": "",
       "enabled": true
+    },
+    {
+      "repo": "stcksmsh/hysteresis",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
     }
   ]
 }
