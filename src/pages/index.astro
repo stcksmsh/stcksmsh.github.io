@@ -211,9 +211,7 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
-    backdrop-filter: blur(8px);
-    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    padding: 1.5rem 0; position: relative; z-index: 3;
     border-bottom: var(--border);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
@@ -225,22 +223,21 @@ const nav = [
     .nav ul { display: none; }
   }
 
-  /* The СИНТЕЗА visualizer as the hero's background layer (SINTEZA_VIZ.md):
-     full-bleed within .hero (deliberately NOT .shell-constrained, unlike
-     every other section — a background reads as a background only if it
-     isn't boxed in), copy on top. A scrim between the two keeps the
-     headline legible through a busy build/drop even though the package
-     already keeps its own palette low-contrast by design. */
+  /* The СИНТЕЗА visualizer as the WHOLE PAGE's persistent background
+     (SINTEZA_VIZ.md) — fixed to the viewport, not scoped to .hero, so it
+     stays behind everything for the entire scroll, not just while the
+     hero is in view. Everything else on the page is normal in-flow
+     content (z-index:auto) and paints above a negative-z-index fixed
+     layer by default; the hero's own scrim only fades ITS copy in. */
+  :global(canvas.sinteza-bg) {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    display: block; z-index: -1;
+  }
   .hero {
     position: relative;
     min-height: 82vh;
     display: flex;
     align-items: center;
-    overflow: hidden;
-  }
-  :global(canvas.sinteza-bg) {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    display: block; z-index: 0;
   }
   .hero-scrim {
     position: absolute; inset: 0; z-index: 1; pointer-events: none;
