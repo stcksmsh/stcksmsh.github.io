@@ -53,6 +53,13 @@ const music = defineCollection({
     // scripts/analyze-track.py) — when present, the track gets a
     // position-synced reactive Oscilloscope instead of a plain embed.
     envelope: z.string().optional(),
+    // path under /public to a sinteza-viz schema-2 sidecar (see
+    // sinteza-viz's scripts/analyze.ts, run against the original WAV
+    // master) — a richer, separate file from `envelope` above. When
+    // present, GlobalPlayer forwards it to the persistent background
+    // visualizer via the player:transport bus's trackchange.track.envelope
+    // (sinteza-viz's own field name for this — see its src/index.ts).
+    sidecar: z.string().optional(),
   }),
 });
 
