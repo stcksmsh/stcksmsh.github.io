@@ -94,9 +94,7 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
-    backdrop-filter: blur(8px);
-    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    padding: 1.5rem 0; position: relative; z-index: 3;
     border-bottom: var(--border);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
@@ -120,7 +118,8 @@ const nav = [
 
   .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   .track {
-    border: var(--border); border-radius: var(--radius); background: var(--bg-raise);
+    border: var(--border); border-radius: var(--radius); background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
     padding: 1.5rem;
     box-shadow: 0 0 0 transparent;
     transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
