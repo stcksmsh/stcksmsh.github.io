@@ -45,7 +45,7 @@
       "enabled": true
     },
     {
-      "repo": "stcksmsh/sinteza-viz",
+      "repo": "stcksmsh/hysteresis",
       "branch": "io-page",
       "contentPath": "",
       "enabled": true
