@@ -123,8 +123,14 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: relative; z-index: 3;
-    border-bottom: var(--border);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
+    position: relative; z-index: 3;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
   .mark-dot { color: var(--accent); }
@@ -141,10 +147,15 @@ const nav = [
      comfortably legible (SINTEZA_VIZ.md §10: "readability scrims on
      reading routes" is explicitly the host's job, not the package's). */
   .cv {
-    max-width: 780px; padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 4rem;
+    max-width: 780px;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem) 4rem;
+    margin-block: clamp(1rem, 2vw, 2rem) 3rem;
     position: relative; z-index: 1;
-    background: color-mix(in oklch, var(--bg) 88%, transparent);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    background: color-mix(in oklch, var(--bg) 82%, transparent);
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
 
   .cv-head {
@@ -209,7 +220,11 @@ const nav = [
     :global(body) { background-image: none !important; }
     :global(.grain), :global(footer) { display: none !important; }
     .no-print { display: none !important; }
-    .cv { max-width: 100%; padding: 0; }
+    .cv {
+      max-width: 100%; padding: 0; margin: 0;
+      border: 0; border-radius: 0; box-shadow: none;
+      background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none;
+    }
     .entry, .cv-section { break-inside: avoid; }
     a { text-decoration: none; }
   }

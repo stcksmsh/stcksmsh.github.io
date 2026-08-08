@@ -73,8 +73,14 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: relative; z-index: 3;
-    border-bottom: var(--border);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
+    position: relative; z-index: 3;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
   .mark-dot { color: var(--accent); }
@@ -108,8 +114,9 @@ const nav = [
 
   :global(.stream) { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
   :global(.entry) {
-    border: var(--border); border-radius: var(--radius); background: var(--bg-glass);
+    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
     backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
     padding: 1.5rem;
   }
   :global(.entry-meta) { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }

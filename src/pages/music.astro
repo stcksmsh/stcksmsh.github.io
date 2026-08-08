@@ -94,8 +94,14 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: relative; z-index: 3;
-    border-bottom: var(--border);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
+    position: relative; z-index: 3;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
   .mark-dot { color: var(--accent); }
@@ -108,9 +114,9 @@ const nav = [
 
   .music-hero { padding-top: clamp(2rem, 6vw, 6rem); }
   .music-scope {
-    border: var(--border); border-radius: var(--radius);
+    border: var(--border); border-radius: var(--radius-panel);
     background: var(--bg-sunken); overflow: hidden;
-    box-shadow: 0 0 80px -30px var(--accent-glow);
+    box-shadow: var(--panel-highlight), 0 0 80px -30px var(--accent-glow);
   }
   .hero-copy { margin-top: 2rem; }
   .hero-copy h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
@@ -118,13 +124,13 @@ const nav = [
 
   .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   .track {
-    border: var(--border); border-radius: var(--radius); background: var(--bg-glass);
+    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
     backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
     padding: 1.5rem;
-    box-shadow: 0 0 0 transparent;
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
     transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
   }
-  .track:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); }
+  .track:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
   .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
   .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
   .track-embed { border-radius: var(--radius); overflow: hidden; }

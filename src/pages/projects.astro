@@ -67,8 +67,14 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: relative; z-index: 3;
-    border-bottom: var(--border);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
+    position: relative; z-index: 3;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
   .mark-dot { color: var(--accent); }
@@ -86,11 +92,12 @@ const nav = [
 
   .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
   .card {
-    border: var(--border); border-radius: var(--radius); background: var(--bg-glass);
+    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
     backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
     transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
   }
-  .card:hover { border-color: var(--accent); box-shadow: 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
+  .card:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
   .card a { display: block; padding: 1.5rem; color: inherit; }
   .card a:hover { text-decoration: none; }
   .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }

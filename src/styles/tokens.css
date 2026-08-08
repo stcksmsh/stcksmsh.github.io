@@ -20,9 +20,16 @@
      Translucent + blurred lets the background breathe through while
      keeping card content legible — same border/radius/hover everywhere
      else, just the fill treatment changes. --glass-blur centralizes the
-     blur amount so every card stays visually consistent. */
-  --bg-glass: color-mix(in oklch, var(--bg-raise) 72%, transparent);
-  --glass-blur: blur(14px);
+     blur amount so every card stays visually consistent. Tuned low/strong
+     enough (55% / 22px) that the blur is actually visible, not just a
+     slightly-less-black box. */
+  --bg-glass: color-mix(in oklch, var(--bg-raise) 55%, transparent);
+  --glass-blur: blur(22px);
+  /* A soft top inner highlight + ambient drop shadow, applied to every
+     glass panel (nav, cards, cv) so it reads as a lofted pane of glass
+     catching light, not a flat rectangle with a border. */
+  --panel-highlight: inset 0 1px 0 oklch(1 0 0 / 0.07);
+  --panel-shadow: 0 24px 60px -32px oklch(0 0 0 / 0.55);
 
   /* ── Ink ─────────────────────────────────────────────────────── */
   --ink:       oklch(0.945 0.016 294);  /* primary text */
@@ -60,7 +67,8 @@
   /* ── Grid & rhythm ─────────────────────────────────────────── */
   --gap: clamp(1rem, 0.6rem + 2vw, 2.5rem);
   --measure: 68ch;
-  --radius: 2px;              /* near-brutalist; corners barely softened */
+  --radius: 2px;              /* near-brutalist; buttons, chips, hairlines */
+  --radius-panel: 16px;       /* nav, cards, cv — soft enough to read as glass, not a div */
   --border: 1px solid var(--hairline);
 
   /* ── Motion — one shared frequency; the whole site breathes ──── */

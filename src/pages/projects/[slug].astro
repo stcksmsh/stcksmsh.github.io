@@ -97,8 +97,14 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: relative; z-index: 3;
-    border-bottom: var(--border);
+    margin-top: clamp(0.75rem, 2vw, 1.5rem);
+    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
+    position: relative; z-index: 3;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
   .mark-dot { color: var(--accent); }
@@ -117,9 +123,9 @@ const nav = [
   .project-links { display: flex; gap: 1.5rem; margin: 1.5rem 0; }
   .project-links a { color: var(--accent); }
   .project-scope {
-    margin-top: 2rem; border: var(--border); border-radius: var(--radius);
+    margin-top: 2rem; border: var(--border); border-radius: var(--radius-panel);
     background: var(--bg-sunken); overflow: hidden;
-    box-shadow: 0 0 60px -30px var(--accent-glow);
+    box-shadow: var(--panel-highlight), 0 0 60px -30px var(--accent-glow);
   }
 
   .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
@@ -127,8 +133,9 @@ const nav = [
 
   .stream { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
   .entry {
-    border: var(--border); border-radius: var(--radius); background: var(--bg-glass);
+    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
     backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
     padding: 1.5rem;
   }
   .entry-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
