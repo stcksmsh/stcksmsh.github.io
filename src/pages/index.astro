@@ -1,6 +1,6 @@
 ---
 import Base from "../layouts/Base.astro";
-import Oscilloscope from "../components/islands/Oscilloscope.tsx";
+import SintezaBackground from "../components/islands/SintezaBackground.tsx";
 import { getCollection } from "astro:content";
 import { musicEmbedSrc } from "../lib/embeds";
 
@@ -61,13 +61,6 @@ const nav = [
   ["devlog", "/#devlog"],
   ["cv", "/cv"],
 ];
-
-// Signature hero track(s) — self-hosted so the hero canvas can react to real
-// playback (SoundCloud/Bandcamp embeds are iframes and can't feed a Web
-// Audio analyser). Add files to public/audio/ and an entry here; only the
-// first is wired up for now. Empty by default until real files exist.
-const heroTracks: { title: string; src: string }[] = [];
-const heroTrack = heroTracks[0];
 ---
 <Base title="Kosta Vukićević">
   <nav class="shell nav">
@@ -79,31 +72,25 @@ const heroTrack = heroTracks[0];
     </ul>
   </nav>
 
-  <header class="shell hero">
-    <div class="hero-scope">
-      <Oscilloscope
-        client:load
-        mode="lissajous"
-        ratio={[3, 2]}
-        height={480}
-        audioSrc={heroTrack?.src}
-        trackTitle={heroTrack?.title}
-      />
-    </div>
-    <div class="hero-copy">
-      <span class="eyebrow coord">SOFTWARE / SYSTEMS / SOUND</span>
-      <h1>BUILD<br/><span class="thin">THE</span> <em>SIGNAL</em></h1>
-      <p class="lede">
-        I write <b>Kotlin for cars</b> for a living. In my own time I
-        <b>make music</b>, <b>break things on purpose</b>, and once helped
-        a couple hundred people <b>ride the bus for free</b>. Based in
-        Belgrade.
-      </p>
-      <div class="status">
-        <span>LOC: <b>BELGRADE</b></span>
-        <span>ROLE: <b>SWE · ANDROID</b></span>
-        <span>STACK: <b>KOTLIN / GO / REACT</b></span>
-        <span class="live">{projects.length} PROJECTS ACTIVE</span>
+  <header class="hero">
+    <SintezaBackground client:load />
+    <div class="hero-scrim"></div>
+    <div class="shell hero-inner">
+      <div class="hero-copy">
+        <span class="eyebrow coord">SOFTWARE / SYSTEMS / SOUND</span>
+        <h1>BUILD<br/><span class="thin">THE</span> <em>SIGNAL</em></h1>
+        <p class="lede">
+          I write <b>Kotlin for cars</b> for a living. In my own time I
+          <b>make music</b>, <b>break things on purpose</b>, and once helped
+          a couple hundred people <b>ride the bus for free</b>. Based in
+          Belgrade.
+        </p>
+        <div class="status">
+          <span>LOC: <b>BELGRADE</b></span>
+          <span>ROLE: <b>SWE · ANDROID</b></span>
+          <span>STACK: <b>KOTLIN / GO / REACT</b></span>
+          <span class="live">{projects.length} PROJECTS ACTIVE</span>
+        </div>
       </div>
     </div>
   </header>
@@ -238,13 +225,31 @@ const heroTrack = heroTracks[0];
     .nav ul { display: none; }
   }
 
-  .hero { padding-top: clamp(2rem, 6vw, 6rem); }
-  .hero-scope {
-    border: var(--border); border-radius: var(--radius);
-    background: var(--bg-sunken); overflow: hidden;
-    box-shadow: 0 0 80px -30px var(--accent-glow);
+  /* The СИНТЕЗА visualizer as the hero's background layer (SINTEZA_VIZ.md):
+     full-bleed within .hero (deliberately NOT .shell-constrained, unlike
+     every other section — a background reads as a background only if it
+     isn't boxed in), copy on top. A scrim between the two keeps the
+     headline legible through a busy build/drop even though the package
+     already keeps its own palette low-contrast by design. */
+  .hero {
+    position: relative;
+    min-height: 82vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
   }
-  .hero-copy { margin-top: 2rem; }
+  :global(canvas.sinteza-bg) {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    display: block; z-index: 0;
+  }
+  .hero-scrim {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(180deg, transparent 0%, var(--bg) 96%),
+      linear-gradient(90deg, color-mix(in oklch, var(--bg) 60%, transparent) 0%, transparent 60%);
+  }
+  .hero-inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2rem, 6vw, 4rem); }
+  .hero-copy { margin-top: 0; }
   .eyebrow {
     display: flex; align-items: center; gap: 0.9rem;
     color: var(--accent); letter-spacing: 0.22em; margin-bottom: 1.4rem;
@@ -338,29 +343,6 @@ const heroTrack = heroTracks[0];
   .dt-meta { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--accent); margin-bottom: 0.6rem; }
   .dt-entry h3 { font-size: var(--step-0); margin-bottom: 0.5rem; }
   .dt-excerpt { color: var(--ink-dim); font-size: var(--step--1); }
-
-  /* Player strip is rendered by the Oscilloscope React island, so these
-     rules must be :global() — Astro's scoped-style attribute never reaches
-     into client-hydrated island markup. */
-  :global(.oscilloscope-player) {
-    display: flex; align-items: center; gap: 1.1rem;
-    border-top: var(--border); background: var(--bg-raise);
-    padding: 0.9rem 1.1rem;
-  }
-  :global(.oscilloscope-playbtn) {
-    width: 2.75rem; height: 2.75rem; flex-shrink: 0; border: 0; cursor: pointer;
-    background: var(--accent); color: var(--bg); font-size: 1rem;
-    display: grid; place-items: center; font-family: var(--font-mono);
-    transition: transform 0.15s var(--ease-scope);
-  }
-  :global(.oscilloscope-playbtn:hover) { transform: scale(1.06); }
-  :global(.oscilloscope-playbtn:active) { transform: scale(0.94); }
-  :global(.oscilloscope-ptext) {
-    font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-dim); letter-spacing: 0.05em;
-  }
-  :global(.oscilloscope-ptext b) {
-    display: block; color: var(--ink); font-size: var(--step-0); letter-spacing: 0.02em; margin-bottom: 0.2rem;
-  }
 </style>
 
 <script>

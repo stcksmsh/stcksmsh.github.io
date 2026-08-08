@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useScopeDraw } from "./useScopeDraw";
 import { loadScWidgetApi, fetchEnvelope, envelopeEnergyAt, type Envelope } from "../../lib/soundcloud-sync";
-import { onRequestPlay, type PlayerTrack } from "../../lib/player-bus";
+import { onRequestPlay, dispatchTransport, type PlayerTrack } from "../../lib/player-bus";
 
 interface Props {
   /** Full SoundCloud-sourced playlist, in display order. Bandcamp tracks
@@ -48,11 +48,12 @@ export default function GlobalPlayer({ tracks }: Props) {
       const widget = SC.Widget(iframeRef.current);
       widgetRef.current = widget;
       widget.bind(SC.Widget.Events.READY, () => setReady(true));
-      widget.bind(SC.Widget.Events.PLAY, () => { playingRef.current = true; setPlaying(true); });
-      widget.bind(SC.Widget.Events.PAUSE, () => { playingRef.current = false; setPlaying(false); });
+      widget.bind(SC.Widget.Events.PLAY, () => { playingRef.current = true; setPlaying(true); dispatchTransport({ type: "play" }); });
+      widget.bind(SC.Widget.Events.PAUSE, () => { playingRef.current = false; setPlaying(false); dispatchTransport({ type: "pause" }); });
       widget.bind(SC.Widget.Events.FINISH, () => {
         playingRef.current = false;
         setPlaying(false);
+        dispatchTransport({ type: "pause" });
         // auto-advance the playlist
         const next = (indexRef.current ?? -1) + 1;
         if (next < tracks.length) playTrack(next);
@@ -60,6 +61,7 @@ export default function GlobalPlayer({ tracks }: Props) {
       widget.bind(SC.Widget.Events.PLAY_PROGRESS, (e: { currentPosition: number }) => {
         lastKnownMsRef.current = e.currentPosition;
         lastKnownAtRef.current = performance.now();
+        dispatchTransport({ type: "position", positionSec: e.currentPosition / 1000 });
       });
     }).catch(() => {});
     return () => { destroyed = true; };
@@ -72,6 +74,10 @@ export default function GlobalPlayer({ tracks }: Props) {
     setIndex(i);
     envelopeRef.current = null;
     if (track.envelope) fetchEnvelope(track.envelope).then((env) => { envelopeRef.current = env; }).catch(() => {});
+    dispatchTransport({
+      type: "trackchange",
+      track: { slug: track.slug, title: track.title, accent: track.accent, envelope: track.sidecar },
+    });
     widgetRef.current.load(`https://soundcloud.com/${track.embedId}`, {
       auto_play: autoPlay,
       hide_related: true,
