@@ -238,9 +238,17 @@ const nav = [
   }
   .hero-scrim {
     position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    /* Strong, wide coverage across the whole text column (headline runs
+       to ~50% width at the hero's max font size) fading out well past it,
+       so the beam/blob still dominate the right side of the viewport
+       without crossing directly through the letterforms. */
     background:
-      linear-gradient(180deg, transparent 0%, var(--bg) 96%),
-      linear-gradient(90deg, color-mix(in oklch, var(--bg) 60%, transparent) 0%, transparent 60%);
+      linear-gradient(90deg,
+        color-mix(in oklch, var(--bg) 97%, transparent) 0%,
+        color-mix(in oklch, var(--bg) 94%, transparent) 48%,
+        color-mix(in oklch, var(--bg) 65%, transparent) 65%,
+        transparent 86%),
+      linear-gradient(180deg, transparent 0%, var(--bg) 96%);
   }
   .hero-inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2rem, 6vw, 4rem); }
   .hero-copy { margin-top: 0; }
@@ -260,6 +268,10 @@ const nav = [
 
   .status {
     display: flex; flex-wrap: wrap; gap: 0; border: var(--border);
+    border-radius: var(--radius-panel); overflow: hidden;
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
     font-family: var(--font-mono); font-size: var(--step--1); width: fit-content; max-width: 100%;
   }
   .status span { padding: 0.6rem 1rem; border-right: var(--border); color: var(--ink-dim); letter-spacing: 0.06em; white-space: nowrap; }
