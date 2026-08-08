@@ -14,6 +14,16 @@
   --grid-line: oklch(0.28 0.04 289 / 0.5);
   --hairline:  oklch(0.35 0.03 289 / 0.6);
 
+  /* Glass cards — the СИНТЕЗА visualizer runs as a persistent page
+     background (see index.astro's .hero / SintezaBackground), so a flatly
+     opaque --bg-raise box reads as a dead rectangle dropped on top of it.
+     Translucent + blurred lets the background breathe through while
+     keeping card content legible — same border/radius/hover everywhere
+     else, just the fill treatment changes. --glass-blur centralizes the
+     blur amount so every card stays visually consistent. */
+  --bg-glass: color-mix(in oklch, var(--bg-raise) 72%, transparent);
+  --glass-blur: blur(14px);
+
   /* ── Ink ─────────────────────────────────────────────────────── */
   --ink:       oklch(0.945 0.016 294);  /* primary text */
   --ink-dim:   oklch(0.70 0.048 294);   /* secondary — 7.3:1 on --bg, comfortably past AA */

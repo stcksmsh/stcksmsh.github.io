@@ -57,6 +57,23 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
 /* Selection nods to the accent */
 ::selection { background: var(--accent-glow); color: var(--ink); }
 
+/* The СИНТЕЗА visualizer — a persistent, site-wide background (SintezaBackground
+   island, mounted once in Base.astro, transition:persist'd like GlobalPlayer
+   so it survives navigation instead of tearing down/rebuilding its WebGL
+   worker on every page). Fixed to the viewport, negative z-index, so it
+   stays behind every page's content for the full scroll — normal in-flow
+   content (z-index:auto) paints above a negative-z-index fixed layer by
+   default, no per-page opt-in needed. Individual pages may still add their
+   own local scrim (see index.astro's .hero-scrim) for extra legibility over
+   dense text. */
+canvas.sinteza-bg {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  display: block; z-index: -1;
+}
+@media print {
+  canvas.sinteza-bg { display: none; }
+}
+
 /* Substrate grain — a faint noise texture over the whole viewport, so the
    flat OKLCH background never reads as a solid digital fill. */
 .grain {

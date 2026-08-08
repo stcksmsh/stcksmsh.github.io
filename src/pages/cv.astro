@@ -123,9 +123,7 @@ const nav = [
 <style>
   .nav {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 1.5rem 0; position: sticky; top: 0; z-index: 10;
-    backdrop-filter: blur(8px);
-    background: color-mix(in oklch, var(--bg) 70%, transparent);
+    padding: 1.5rem 0; position: relative; z-index: 3;
     border-bottom: var(--border);
   }
   .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
@@ -137,7 +135,17 @@ const nav = [
     .nav ul { display: none; }
   }
 
-  .cv { max-width: 780px; padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 4rem; }
+  /* A dense reading route — the persistent visualizer background (mounted
+     site-wide in Base.astro) needs a stronger scrim here than the glass-
+     card treatment elsewhere gets, so a full resume's worth of text stays
+     comfortably legible (SINTEZA_VIZ.md §10: "readability scrims on
+     reading routes" is explicitly the host's job, not the package's). */
+  .cv {
+    max-width: 780px; padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 4rem;
+    position: relative; z-index: 1;
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
 
   .cv-head {
     display: flex; justify-content: space-between; align-items: flex-start;

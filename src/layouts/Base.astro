@@ -3,6 +3,7 @@ import "../styles/global.css";
 import { ViewTransitions } from "astro:transitions";
 import { getCollection } from "astro:content";
 import GlobalPlayer from "../components/islands/GlobalPlayer.tsx";
+import SintezaBackground from "../components/islands/SintezaBackground.tsx";
 import type { PlayerTrack } from "../lib/player-bus";
 
 interface Props {
@@ -29,6 +30,7 @@ try {
       embedId: t.data.embedId,
       accent: t.data.accent,
       envelope: t.data.envelope,
+      sidecar: t.data.sidecar,
     }));
 } catch {}
 ---
@@ -48,6 +50,7 @@ try {
     <ViewTransitions />
   </head>
   <body>
+    <SintezaBackground client:load transition:persist transition:name="sinteza-bg" />
     <div class="grain"></div>
     <slot />
     <footer class="shell" style="padding: 4rem 0 2rem; margin-top: 6rem; border-top: var(--border);">
