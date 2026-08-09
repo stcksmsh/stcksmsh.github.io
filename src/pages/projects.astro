@@ -1,6 +1,7 @@
 ---
 import Base from "../layouts/Base.astro";
 import { getCollection } from "astro:content";
+import { padForTicker } from "../lib/ticker";
 
 let projects: any[] = [];
 try {
@@ -53,9 +54,12 @@ const nav = [
               <span class="card-status coord">{p.status}</span>
               <h3>{p.title}</h3>
               <p class="card-tag">{p.tagline}</p>
-              <ul class="stack">
-                {p.stack.slice(0, 4).map((s: string) => <li>{s}</li>)}
-              </ul>
+              <div class="ticker-viewport">
+                <ul class="stack">
+                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li>{s}</li>)}
+                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li aria-hidden="true">{s}</li>)}
+                </ul>
+              </div>
             </a>
           </li>
         ))}
@@ -85,7 +89,13 @@ const nav = [
     .nav ul { display: none; }
   }
 
-  .projects-hero { padding-top: clamp(2rem, 5vw, 4rem); }
+  /* Shared with .music-hero/.devlog-hero so the three nav-adjacent pages
+     don't jump height on navigation (jarring with View Transitions). */
+  .projects-hero {
+    padding-top: clamp(2rem, 5vw, 4rem);
+    min-height: clamp(420px, 46vh, 520px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
   .projects-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
   .projects-hero .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
   .projects-hero .lede code { color: var(--accent); font-size: 0.85em; }
@@ -103,8 +113,9 @@ const nav = [
   .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
   .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
   .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
-  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+  /* Ticker scroll mechanics live in global.css; this just keeps the pill look. */
+  .stack { list-style: none; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
 
   .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
   .empty code { color: var(--accent); }

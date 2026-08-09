@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Fuse from "fuse.js";
+import { padForTicker } from "../../lib/ticker";
 
 export interface DevlogFeedEntry {
   id: string;
@@ -77,15 +78,15 @@ export default function DevlogFeed({ entries }: Props) {
                   {entry.project.title}
                 </a>
                 {entry.tags.length > 0 && (
-                  <div className="tags-viewport">
-                    {/* Duplicated so the ticker loop (translateX -50%) is seamless;
-                        the second copy is decorative only. */}
+                  <div className="ticker-viewport">
+                    {/* Padded to a minimum length, then doubled, so the ticker
+                        loop (translateX -50%) is seamless even for 1-2 tags. */}
                     <ul className="tags">
-                      {entry.tags.map((t) => (
-                        <li key={t}>{t}</li>
+                      {padForTicker(entry.tags).map((t, i) => (
+                        <li key={`${t}-${i}`}>{t}</li>
                       ))}
-                      {entry.tags.map((t) => (
-                        <li key={`dup-${t}`} aria-hidden="true">{t}</li>
+                      {padForTicker(entry.tags).map((t, i) => (
+                        <li key={`dup-${t}-${i}`} aria-hidden="true">{t}</li>
                       ))}
                     </ul>
                   </div>

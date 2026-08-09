@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from "astro:content";
 import Base from "../../layouts/Base.astro";
+import { padForTicker } from "../../lib/ticker";
 
 export async function getStaticPaths() {
   const projects = await getCollection("projects");
@@ -50,9 +51,12 @@ const nav = [
       <span class="coord">{project.status}</span>
       <h1>{project.title}</h1>
       <p class="lede">{project.tagline}</p>
-      <ul class="stack">
-        {project.stack.map((s: string) => <li>{s}</li>)}
-      </ul>
+      <div class="ticker-viewport">
+        <ul class="stack">
+          {padForTicker(project.stack).map((s: string) => <li>{s}</li>)}
+          {padForTicker(project.stack).map((s: string) => <li aria-hidden="true">{s}</li>)}
+        </ul>
+      </div>
       <div class="project-links">
         <a href={project.repo}>repo →</a>
         {project.demo && <a href={project.demo}>demo →</a>}
@@ -77,10 +81,10 @@ const nav = [
                 {entry.data.date.toISOString().slice(0, 10)}
               </time>
               {entry.data.tags.length > 0 && (
-                <div class="tags-viewport">
+                <div class="ticker-viewport">
                   <ul class="tags">
-                    {entry.data.tags.map((t: string) => <li>{t}</li>)}
-                    {entry.data.tags.map((t: string) => <li aria-hidden="true">{t}</li>)}
+                    {padForTicker(entry.data.tags).map((t: string) => <li>{t}</li>)}
+                    {padForTicker(entry.data.tags).map((t: string) => <li aria-hidden="true">{t}</li>)}
                   </ul>
                 </div>
               )}
@@ -133,8 +137,12 @@ const nav = [
   .project-hero-inner { position: relative; z-index: 2; }
   .project-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
   .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
-  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.5rem; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+  /* Ticker scroll mechanics (.ticker-viewport, track animation) live in
+     global.css, shared with every .stack/.tags list on the site — this
+     just keeps the pill look. */
+  .project-hero-inner .ticker-viewport { margin-top: 1.5rem; }
+  .stack { list-style: none; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
   .project-links { display: flex; gap: 1.5rem; margin: 1.5rem 0 0.5rem; }
   .project-links a { color: var(--accent); }
 
@@ -149,23 +157,8 @@ const nav = [
     padding: 1.5rem;
   }
   .entry-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
-  /* Newsreel-style ticker: viewport clips + feathers the edges, .tags is
-     the actual track (content duplicated above) sliding by forever.
-     prefers-reduced-motion freezes it globally (tokens.css). */
-  .entry-meta .tags-viewport {
-    overflow: hidden; max-width: 180px;
-    -webkit-mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
-    mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
-  }
-  .entry-meta .tags {
-    list-style: none; display: flex; gap: 0.4rem; width: max-content;
-    animation: tags-ticker 12s linear infinite;
-  }
-  .entry-meta .tags-viewport:hover .tags { animation-play-state: paused; }
+  .entry-meta .tags { list-style: none; }
   .entry-meta .tags li { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); white-space: nowrap; }
-  @keyframes tags-ticker {
-    to { transform: translateX(-50%); }
-  }
   .entry h3 { font-size: var(--step-1); margin-bottom: 0.75rem; }
   .entry-body { max-width: var(--measure); color: var(--ink-dim); }
   .entry-body :global(a) { color: var(--accent); }
