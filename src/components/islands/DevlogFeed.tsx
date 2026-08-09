@@ -77,11 +77,18 @@ export default function DevlogFeed({ entries }: Props) {
                   {entry.project.title}
                 </a>
                 {entry.tags.length > 0 && (
-                  <ul className="tags">
-                    {entry.tags.map((t) => (
-                      <li key={t}>{t}</li>
-                    ))}
-                  </ul>
+                  <div className="tags-viewport">
+                    {/* Duplicated so the ticker loop (translateX -50%) is seamless;
+                        the second copy is decorative only. */}
+                    <ul className="tags">
+                      {entry.tags.map((t) => (
+                        <li key={t}>{t}</li>
+                      ))}
+                      {entry.tags.map((t) => (
+                        <li key={`dup-${t}`} aria-hidden="true">{t}</li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
               <h3>

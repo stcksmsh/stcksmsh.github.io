@@ -242,13 +242,16 @@ const nav = [
        to ~50% width at the hero's max font size) fading out well past it,
        so the beam/blob still dominate the right side of the viewport
        without crossing directly through the letterforms. */
-    background:
-      linear-gradient(90deg,
-        color-mix(in oklch, var(--bg) 97%, transparent) 0%,
-        color-mix(in oklch, var(--bg) 94%, transparent) 48%,
-        color-mix(in oklch, var(--bg) 65%, transparent) 65%,
-        transparent 86%),
-      linear-gradient(180deg, transparent 0%, var(--bg) 96%);
+    background: linear-gradient(90deg,
+      color-mix(in oklch, var(--bg) 97%, transparent) 0%,
+      color-mix(in oklch, var(--bg) 94%, transparent) 48%,
+      color-mix(in oklch, var(--bg) 65%, transparent) 65%,
+      transparent 86%);
+    /* Feather top/bottom so the scrim fades into the next section's bare
+       artwork instead of ending on a flat opaque band that seams against
+       it (same treatment as .project-hero-scrim). */
+    mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
   }
   .hero-inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2rem, 6vw, 4rem); }
   .hero-copy { margin-top: 0; }

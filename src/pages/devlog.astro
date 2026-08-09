@@ -121,8 +121,23 @@ const nav = [
   }
   :global(.entry-meta) { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
   :global(.entry-meta .project-chip) { color: var(--accent); }
-  :global(.entry-meta .tags) { list-style: none; display: flex; gap: 0.4rem; }
-  :global(.entry-meta .tags li) { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); }
+  /* Newsreel-style ticker: viewport clips + feathers the edges, .tags is
+     the actual track (content duplicated in DevlogFeed.tsx) sliding by
+     forever. prefers-reduced-motion freezes it globally (tokens.css). */
+  :global(.entry-meta .tags-viewport) {
+    overflow: hidden; max-width: 180px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+    mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+  }
+  :global(.entry-meta .tags) {
+    list-style: none; display: flex; gap: 0.4rem; width: max-content;
+    animation: tags-ticker 12s linear infinite;
+  }
+  :global(.entry-meta .tags-viewport:hover .tags) { animation-play-state: paused; }
+  :global(.entry-meta .tags li) { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); white-space: nowrap; }
+  @keyframes tags-ticker {
+    to { transform: translateX(-50%); }
+  }
   :global(.entry h3) { font-size: var(--step-1); margin-bottom: 0.75rem; }
   :global(.entry h3 a) { color: var(--ink); }
   :global(.entry h3 a:hover) { color: var(--accent); }
