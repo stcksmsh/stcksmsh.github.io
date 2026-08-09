@@ -16,6 +16,8 @@ SoundCloud is embedded via iframe (cross-origin, no live audio access), so the v
 
 **GlobalPlayer** (`src/components/islands/GlobalPlayer.tsx`) was rebuilt this session: real seek bar (drag-to-seek via debounced `onChange`, works for mouse/touch/keyboard), looping queue (`FINISH` wraps `(index+1) % tracks.length` instead of stopping dead), a queue-toggle panel. The old oscilloscope canvas is gone — it depended on a legacy per-track `envelope` field and did nothing for tracks without one.
 
+**⚠️ `package-lock.json` pins a resolved commit SHA for the `sinteza-viz` dependency, not just the branch.** `package.json` tracks `github:stcksmsh/hysteresis#master`, but merging a fix to that repo's `master` does **not** automatically reach this site — the lockfile needs to be re-resolved separately: `npm install sinteza-viz@github:stcksmsh/hysteresis#master`, then commit the resulting `package-lock.json` diff. Landed fixes in `hysteresis` this session (flash pacing, real energy driving the visual, resize-debounce fixing a scroll-triggered stutter, onset particle removal) each needed this as a separate follow-up PR — don't assume a merged upstream fix is live without checking/doing this.
+
 ## Design system notes
 
 - `--bg-glass`/`--glass-blur` (glass-card treatment) + `--radius-panel`/`--panel-highlight`/`--panel-shadow` (soft-edged panel look) are the established visual language for anything sitting on top of the persistent visualizer background — nav, cards, the CV scrim, the player bar. Avoid flat opaque boxes or hard 1px borders against the canvas; they read as "old-style divs pasted on top" (a real complaint, fixed several times this session — always check new UI against this).
