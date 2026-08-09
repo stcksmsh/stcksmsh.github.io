@@ -29,6 +29,23 @@ export function onRequestPlay(cb: (track: PlayerTrack) => void): () => void {
   return () => window.removeEventListener(REQUEST_PLAY, handler);
 }
 
+// ---- duck request ----
+// Lets another island (the Mouthpiece speech demo) ask GlobalPlayer to fade
+// the SoundCloud widget's volume down while it plays something else, then
+// back up when done. GlobalPlayer owns the actual widget.setVolume() ramp —
+// this bus just carries the on/off request, same pattern as request-play.
+const REQUEST_DUCK = "player:request-duck";
+
+export function requestDuck(active: boolean) {
+  window.dispatchEvent(new CustomEvent<boolean>(REQUEST_DUCK, { detail: active }));
+}
+
+export function onDuckRequest(cb: (active: boolean) => void): () => void {
+  const handler = (e: Event) => cb((e as CustomEvent<boolean>).detail);
+  window.addEventListener(REQUEST_DUCK, handler);
+  return () => window.removeEventListener(REQUEST_DUCK, handler);
+}
+
 // ---- player:transport ----
 // The bus sinteza-viz's init() listens to itself (its src/index.ts, "matching
 // the host's own src/lib/player-bus.ts by convention, not by import" — the

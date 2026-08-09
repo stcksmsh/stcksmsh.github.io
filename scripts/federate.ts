@@ -37,6 +37,27 @@ const ManifestSchema = z.object({
   ),
 });
 
+// Optional per-project demo/ bundle — a curated set of real audio fragments
+// + provenance, reassembled client-side (see MouthpieceDemoScope.tsx). Any
+// project can carry one; absent demo/manifest.json just means no demo.
+const DemoSegmentSchema = z.object({
+  id: z.string(),
+  audioFile: z.string(),
+  durationMs: z.number(),
+  label: z.string(),
+  parentWord: z.string().nullable(),
+  speaker: z.string().nullable(),
+  sourceUrl: z.string().nullable(),
+  natural: z.boolean(),
+});
+const DemoManifestSchema = z.array(
+  z.object({
+    text: z.string(),
+    slug: z.string(),
+    segments: z.array(DemoSegmentSchema),
+  })
+);
+
 async function fetchText(url: string): Promise<string | null> {
   const res = await fetch(url);
   if (res.status === 404) return null;
@@ -55,13 +76,33 @@ async function listDevlogs(repo: string, branch: string, path: string) {
   return items.filter((i) => i.type === "file" && i.name.endsWith(".md")).map((i) => i.name);
 }
 
+// Same Contents-API listing pattern, generalized for any dir (used for
+// demo/clips/ — binary files, not markdown).
+async function listFiles(repo: string, branch: string, dir: string) {
+  const api = `https://api.github.com/repos/${repo}/contents/${dir}?ref=${branch}`;
+  const res = await fetch(api, { headers: { "Accept": "application/vnd.github+json" } });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`${res.status} listing ${api}`);
+  const items = (await res.json()) as Array<{ name: string; type: string }>;
+  return items.filter((i) => i.type === "file").map((i) => i.name);
+}
+
+async function fetchBinary(url: string): Promise<Buffer | null> {
+  const res = await fetch(url);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`${res.status} fetching ${url}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 async function main() {
   const { projects: all } = ManifestSchema.parse(manifest);
   const projects = all.filter((p) => p.enabled);
   const outProjects = "src/content/projects";
   const outDevlogs = "src/content/devlogs";
+  const outDemos = "public/demo";
   await rm(outProjects, { recursive: true, force: true });
   await rm(outDevlogs, { recursive: true, force: true });
+  await rm(outDemos, { recursive: true, force: true });
   await mkdir(outProjects, { recursive: true });
 
   const index: Array<Record<string, unknown>> = [];
@@ -95,6 +136,24 @@ async function main() {
       index.push({ project: meta.slug, file: name });
     }
     console.log(`✓ ${meta.slug}: ${files.length} devlog(s)`);
+
+    // optional demo/ bundle — curated real audio fragments + provenance for
+    // an in-browser Web Audio reassembly demo (see MouthpieceDemoScope.tsx)
+    const demoManifestRaw = await fetchText(`${RAW}/${p.repo}/${base}/demo/manifest.json`);
+    if (demoManifestRaw) {
+      const demoManifest = DemoManifestSchema.parse(JSON.parse(demoManifestRaw));
+      const projectDemoDir = `${outDemos}/${meta.slug}`;
+      await mkdir(`${projectDemoDir}/clips`, { recursive: true });
+      await writeFile(`${projectDemoDir}/manifest.json`, JSON.stringify(demoManifest, null, 2));
+
+      const clipDir = [p.contentPath, "demo/clips"].filter(Boolean).join("/");
+      const clipNames = await listFiles(p.repo, p.branch, clipDir);
+      for (const name of clipNames) {
+        const bin = await fetchBinary(`${RAW}/${p.repo}/${base}/demo/clips/${name}`);
+        if (bin) await writeFile(`${projectDemoDir}/clips/${name}`, bin);
+      }
+      console.log(`  + demo: ${demoManifest.length} entries, ${clipNames.length} clip(s)`);
+    }
   }
 
   await writeFile("src/content/_federation.json", JSON.stringify({ builtAt: new Date().toISOString(), index }, null, 2));

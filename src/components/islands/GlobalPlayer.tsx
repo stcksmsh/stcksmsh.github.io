@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadScWidgetApi } from "../../lib/soundcloud-sync";
-import { onRequestPlay, dispatchTransport, type PlayerTrack } from "../../lib/player-bus";
+import { onRequestPlay, onDuckRequest, dispatchTransport, type PlayerTrack } from "../../lib/player-bus";
 
 interface Props {
   /** Full SoundCloud-sourced playlist, in display order. Bandcamp tracks
@@ -12,6 +12,15 @@ interface Props {
 const DEFAULT_ACCENT: [number, number, number] = [0.686, 0.205, 34];
 const POSITION_POLL_MS = 200;
 const SEEK_COMMIT_DEBOUNCE_MS = 150;
+
+// Ducking (onDuckRequest, below): the Widget API has no volume-ramp
+// primitive, just setVolume(0-100) — stepped approximation of a fade
+// instead of a true tween. There's no other volume control on this player
+// (see AGENTS.md), so "full" is always 100, nothing to restore.
+const DUCK_LEVEL = 15;
+const DUCK_IN_MS = 200;
+const DUCK_OUT_MS = 350;
+const DUCK_STEPS = 8;
 
 function formatTime(ms: number): string {
   if (!isFinite(ms) || ms < 0) return "0:00";
@@ -49,6 +58,8 @@ export default function GlobalPlayer({ tracks }: Props) {
   const playingRef = useRef(false);
   const indexRef = useRef<number | null>(null);
   const seekDebounceRef = useRef<number | null>(null);
+  const volumeRef = useRef(100);
+  const duckTimerRef = useRef<number | null>(null);
   indexRef.current = index;
 
   const current = index !== null ? tracks[index] : null;
@@ -145,6 +156,30 @@ export default function GlobalPlayer({ tracks }: Props) {
     const i = tracks.findIndex((t) => t.slug === track.slug);
     if (i >= 0) playTrack(i);
   }), [tracks, playTrack]);
+
+  const rampVolume = useCallback((target: number, ms: number) => {
+    const widget = widgetRef.current;
+    if (!widget) { volumeRef.current = target; return; }
+    if (duckTimerRef.current) window.clearInterval(duckTimerRef.current);
+    const from = volumeRef.current;
+    const stepMs = Math.max(16, ms / DUCK_STEPS);
+    let i = 0;
+    duckTimerRef.current = window.setInterval(() => {
+      i++;
+      const v = from + (target - from) * (i / DUCK_STEPS);
+      volumeRef.current = v;
+      widget.setVolume(Math.round(v));
+      if (i >= DUCK_STEPS && duckTimerRef.current) {
+        window.clearInterval(duckTimerRef.current);
+        duckTimerRef.current = null;
+      }
+    }, stepMs);
+  }, []);
+
+  // Cross-island: the Mouthpiece speech demo ducks us while it plays.
+  useEffect(() => onDuckRequest((active) => {
+    rampVolume(active ? DUCK_LEVEL : 100, active ? DUCK_IN_MS : DUCK_OUT_MS);
+  }), [rampVolume]);
 
   const togglePlay = () => {
     if (!widgetRef.current) return;
