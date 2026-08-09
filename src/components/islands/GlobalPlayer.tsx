@@ -53,6 +53,17 @@ export default function GlobalPlayer({ tracks }: Props) {
 
   const current = index !== null ? tracks[index] : null;
 
+  // getDuration() can briefly return 0 right after a sound becomes ready —
+  // retry a few times before trusting the value.
+  const fetchDuration = useCallback((attempt = 0) => {
+    const widget = widgetRef.current;
+    if (!widget) return;
+    widget.getDuration((ms: number) => {
+      if (ms > 0) { setDurationMs(ms); return; }
+      if (attempt < 5) window.setTimeout(() => fetchDuration(attempt + 1), 200);
+    });
+  }, []);
+
   // Bind the widget once, to the first track (may not play until requested).
   useEffect(() => {
     if (tracks.length === 0 || !iframeRef.current) return;
@@ -62,10 +73,17 @@ export default function GlobalPlayer({ tracks }: Props) {
       const SC = (window as any).SC;
       const widget = SC.Widget(iframeRef.current);
       widgetRef.current = widget;
-      widget.bind(SC.Widget.Events.READY, () => {
-        widget.getDuration((ms: number) => setDurationMs(ms));
+      // READY only reliably fires for the iframe's initial load — subsequent
+      // track switches go through playTrack()'s load() callback instead.
+      widget.bind(SC.Widget.Events.READY, () => fetchDuration());
+      widget.bind(SC.Widget.Events.PLAY, () => {
+        playingRef.current = true;
+        setPlaying(true);
+        dispatchTransport({ type: "play" });
+        // Belt-and-braces: guarantees duration is populated by the time
+        // playback is actually audible, even if load()'s callback didn't fire.
+        fetchDuration();
       });
-      widget.bind(SC.Widget.Events.PLAY, () => { playingRef.current = true; setPlaying(true); dispatchTransport({ type: "play" }); });
       widget.bind(SC.Widget.Events.PAUSE, () => { playingRef.current = false; setPlaying(false); dispatchTransport({ type: "pause" }); });
       widget.bind(SC.Widget.Events.FINISH, () => {
         playingRef.current = false;
@@ -113,11 +131,14 @@ export default function GlobalPlayer({ tracks }: Props) {
       show_reposts: false,
       show_teaser: false,
       visual: false,
+      // The reliable per-track-switch hook — READY is not guaranteed to
+      // refire on a later load(), but this callback always does once the
+      // new sound is ready.
+      callback: () => fetchDuration(),
     });
-    // load() re-fires READY; position resets for the new track
     lastKnownMsRef.current = 0;
     lastKnownAtRef.current = performance.now();
-  }, [tracks]);
+  }, [tracks, fetchDuration]);
 
   // Cross-island: /music and the homepage carousel request playback here.
   useEffect(() => onRequestPlay((track) => {
