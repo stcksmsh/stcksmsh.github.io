@@ -1,0 +1,8 @@
+{
+  "title": "Triple Pendulum",
+  "source": "soundcloud",
+  "embedId": "stcksmsh/triple-pendulum",
+  "year": 2026,
+  "accent": [0.64, 0.25, 300],
+  "sidecar": "/sidecars/triple-pendulum.sidecar.json"
+}

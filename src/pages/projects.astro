@@ -54,10 +54,11 @@ const nav = [
               <span class="card-status coord">{p.status}</span>
               <h3>{p.title}</h3>
               <p class="card-tag">{p.tagline}</p>
-              <div class="ticker-viewport">
+              <div class="ticker-viewport" aria-hidden="true">
                 <ul class="stack">
-                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li>{s}</li>)}
-                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li aria-hidden="true">{s}</li>)}
+                  {[...padForTicker(p.stack.slice(0, 4)), ...padForTicker(p.stack.slice(0, 4))].map((s: string | null) =>
+                    s === null ? <li class="ticker-gap" /> : <li>{s}</li>
+                  )}
                 </ul>
               </div>
             </a>

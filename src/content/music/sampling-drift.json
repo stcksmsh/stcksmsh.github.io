@@ -1,0 +1,8 @@
+{
+  "title": "Sampling Drift",
+  "source": "soundcloud",
+  "embedId": "stcksmsh/sampling-drift",
+  "year": 2026,
+  "accent": [0.75, 0.13, 200],
+  "sidecar": "/sidecars/sampling-drift.sidecar.json"
+}

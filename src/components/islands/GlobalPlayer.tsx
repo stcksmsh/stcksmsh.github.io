@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useScopeDraw } from "./useScopeDraw";
-import { loadScWidgetApi, fetchEnvelope, envelopeEnergyAt, type Envelope } from "../../lib/soundcloud-sync";
+import { loadScWidgetApi } from "../../lib/soundcloud-sync";
 import { onRequestPlay, dispatchTransport, type PlayerTrack } from "../../lib/player-bus";
 
 interface Props {
@@ -11,6 +10,16 @@ interface Props {
 }
 
 const DEFAULT_ACCENT: [number, number, number] = [0.686, 0.205, 34];
+const POSITION_POLL_MS = 200;
+const SEEK_COMMIT_DEBOUNCE_MS = 150;
+
+function formatTime(ms: number): string {
+  if (!isFinite(ms) || ms < 0) return "0:00";
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 /**
  * Persistent bottom player — transition:persist'd into every page via
@@ -20,20 +29,26 @@ const DEFAULT_ACCENT: [number, number, number] = [0.686, 0.205, 34];
  * API's load() rather than re-mounting a new iframe per track. Other
  * islands (track cards on /music, the homepage carousel) request playback
  * via the player-bus rather than embedding their own iframes.
+ *
+ * The playlist loops: FINISH always advances to (index + 1) % tracks.length,
+ * so it wraps back to the first track rather than stopping dead at the end.
  */
 export default function GlobalPlayer({ tracks }: Props) {
   const [index, setIndex] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [positionMs, setPositionMs] = useState(0);
+  const [durationMs, setDurationMs] = useState(0);
+  const [seeking, setSeeking] = useState(false);
+  const [dragMs, setDragMs] = useState(0);
+  const [queueOpen, setQueueOpen] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const widgetRef = useRef<any>(null);
-  const envelopeRef = useRef<Envelope | null>(null);
   const lastKnownMsRef = useRef(0);
   const lastKnownAtRef = useRef(performance.now());
   const playingRef = useRef(false);
   const indexRef = useRef<number | null>(null);
+  const seekDebounceRef = useRef<number | null>(null);
   indexRef.current = index;
 
   const current = index !== null ? tracks[index] : null;
@@ -47,16 +62,18 @@ export default function GlobalPlayer({ tracks }: Props) {
       const SC = (window as any).SC;
       const widget = SC.Widget(iframeRef.current);
       widgetRef.current = widget;
-      widget.bind(SC.Widget.Events.READY, () => setReady(true));
+      widget.bind(SC.Widget.Events.READY, () => {
+        widget.getDuration((ms: number) => setDurationMs(ms));
+      });
       widget.bind(SC.Widget.Events.PLAY, () => { playingRef.current = true; setPlaying(true); dispatchTransport({ type: "play" }); });
       widget.bind(SC.Widget.Events.PAUSE, () => { playingRef.current = false; setPlaying(false); dispatchTransport({ type: "pause" }); });
       widget.bind(SC.Widget.Events.FINISH, () => {
         playingRef.current = false;
         setPlaying(false);
         dispatchTransport({ type: "pause" });
-        // auto-advance the playlist
-        const next = (indexRef.current ?? -1) + 1;
-        if (next < tracks.length) playTrack(next);
+        // Loop the queue — wraps back to the first track after the last.
+        const next = ((indexRef.current ?? -1) + 1) % tracks.length;
+        playTrack(next);
       });
       widget.bind(SC.Widget.Events.PLAY_PROGRESS, (e: { currentPosition: number }) => {
         lastKnownMsRef.current = e.currentPosition;
@@ -68,12 +85,23 @@ export default function GlobalPlayer({ tracks }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tracks.length]);
 
+  // Smooth-ish position display between PLAY_PROGRESS ticks — paused while
+  // the user is actively dragging the seek bar so it doesn't fight them.
+  useEffect(() => {
+    if (!playing || seeking) return;
+    const id = window.setInterval(() => {
+      setPositionMs(lastKnownMsRef.current + (performance.now() - lastKnownAtRef.current));
+    }, POSITION_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [playing, seeking]);
+
   const playTrack = useCallback((i: number, autoPlay = true) => {
     const track = tracks[i];
     if (!track || !widgetRef.current) return;
     setIndex(i);
-    envelopeRef.current = null;
-    if (track.envelope) fetchEnvelope(track.envelope).then((env) => { envelopeRef.current = env; }).catch(() => {});
+    setQueueOpen(false);
+    setDurationMs(0);
+    setPositionMs(0);
     dispatchTransport({
       type: "trackchange",
       track: { slug: track.slug, title: track.title, accent: track.accent, envelope: track.sidecar },
@@ -106,30 +134,79 @@ export default function GlobalPlayer({ tracks }: Props) {
   const prev = () => { if (index !== null) playTrack((index - 1 + tracks.length) % tracks.length); };
   const next = () => { if (index !== null) playTrack((index + 1) % tracks.length); };
 
-  const getEnergy = useCallback((prevEnergy: number) => {
-    const envelope = envelopeRef.current;
-    if (!envelope || !playingRef.current) return prevEnergy * 0.95;
-    const estMs = lastKnownMsRef.current + (performance.now() - lastKnownAtRef.current);
-    return envelopeEnergyAt(envelope, estMs);
-  }, []);
+  const onSeekInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const ms = Number(e.target.value);
+    setSeeking(true);
+    setDragMs(ms);
+    if (seekDebounceRef.current) window.clearTimeout(seekDebounceRef.current);
+    seekDebounceRef.current = window.setTimeout(() => {
+      widgetRef.current?.seekTo(ms);
+      lastKnownMsRef.current = ms;
+      lastKnownAtRef.current = performance.now();
+      setPositionMs(ms);
+      setSeeking(false);
+    }, SEEK_COMMIT_DEBOUNCE_MS);
+  };
 
   const accent = current?.accent ?? DEFAULT_ACCENT;
-  useScopeDraw({ canvasRef, mode: "wave", accent, ratio: [3, 2], reactive: true, getEnergy });
+  const shownPositionMs = seeking ? dragMs : positionMs;
 
   if (tracks.length === 0) return null;
 
   return (
     <div className="global-player" style={accent ? ({ "--accent-l": accent[0], "--accent-c": accent[1], "--accent-h": accent[2] } as any) : undefined}>
+      {queueOpen && (
+        <div className="gp-queue shell">
+          <ul>
+            {tracks.map((t, i) => (
+              <li key={t.slug}>
+                <button type="button" className={i === index ? "gp-queue-active" : ""} onClick={() => playTrack(i)}>
+                  <span className="gp-queue-index">{i === index && playing ? "▶" : String(i + 1).padStart(2, "0")}</span>
+                  <span className="gp-queue-title">{t.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="gp-shell shell">
         <button type="button" className="gp-btn" onClick={prev} aria-label="Previous track" disabled={tracks.length < 2}>⏮</button>
         <button type="button" className="gp-btn gp-play" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
           {playing ? "❚❚" : "▶"}
         </button>
         <button type="button" className="gp-btn" onClick={next} aria-label="Next track" disabled={tracks.length < 2}>⏭</button>
-        <canvas ref={canvasRef} className="gp-scope" role="img" aria-label="Oscilloscope trace" />
-        <div className="gp-title">
-          {current ? <b>{current.title}</b> : <span className="gp-hint">press play — {tracks.length} track{tracks.length === 1 ? "" : "s"}</span>}
+
+        <div className="gp-main">
+          <div className="gp-title">
+            {current ? <b>{current.title}</b> : <span className="gp-hint">press play — {tracks.length} track{tracks.length === 1 ? "" : "s"}</span>}
+          </div>
+          <div className="gp-seekrow">
+            <span className="gp-time">{formatTime(shownPositionMs)}</span>
+            <input
+              type="range"
+              className="gp-seek"
+              min={0}
+              max={durationMs || 0}
+              value={Math.min(shownPositionMs, durationMs || 0)}
+              onChange={onSeekInput}
+              disabled={!current || !durationMs}
+              aria-label="Seek"
+              style={{ "--gp-seek-pct": `${durationMs ? (Math.min(shownPositionMs, durationMs) / durationMs) * 100 : 0}%` } as any}
+            />
+            <span className="gp-time">{formatTime(durationMs)}</span>
+          </div>
         </div>
+
+        <button
+          type="button"
+          className={"gp-btn" + (queueOpen ? " gp-btn-active" : "")}
+          onClick={() => setQueueOpen((v) => !v)}
+          aria-label={queueOpen ? "Hide queue" : "Show queue"}
+          aria-expanded={queueOpen}
+          disabled={tracks.length < 2}
+        >
+          ≡
+        </button>
       </div>
       <iframe
         ref={iframeRef}
