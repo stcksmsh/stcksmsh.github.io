@@ -78,16 +78,21 @@ export default function DevlogFeed({ entries }: Props) {
                   {entry.project.title}
                 </a>
                 {entry.tags.length > 0 && (
-                  <div className="ticker-viewport">
-                    {/* Padded to a minimum length, then doubled, so the ticker
-                        loop (translateX -50%) is seamless even for 1-2 tags. */}
+                  // Decorative — a constantly-scrolling duplicated list has
+                  // nothing useful to announce; the tags are already present
+                  // as real (searchable) data on this entry.
+                  <div className="ticker-viewport" aria-hidden="true">
+                    {/* Padded (with a gap marker between each rep) then doubled,
+                        so the ticker loop (translateX -50%) is seamless even
+                        for 1-2 tags. */}
                     <ul className="tags">
-                      {padForTicker(entry.tags).map((t, i) => (
-                        <li key={`${t}-${i}`}>{t}</li>
-                      ))}
-                      {padForTicker(entry.tags).map((t, i) => (
-                        <li key={`dup-${t}-${i}`} aria-hidden="true">{t}</li>
-                      ))}
+                      {[...padForTicker(entry.tags), ...padForTicker(entry.tags)].map((t, i) =>
+                        t === null ? (
+                          <li key={`gap-${i}`} className="ticker-gap" />
+                        ) : (
+                          <li key={`${t}-${i}`}>{t}</li>
+                        )
+                      )}
                     </ul>
                   </div>
                 )}

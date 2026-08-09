@@ -37,13 +37,19 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   outline-offset: 3px;
 }
 
-/* Coordinate labels in margins — scope graticule / color-theory plot vibe */
+/* Coordinate labels in margins — scope graticule / color-theory plot vibe.
+   --ink-faint is deliberately dim, but plenty of these now sit directly on
+   the persistent visualizer canvas outside any glass card (section heads,
+   footer, etc.) with nothing else boosting contrast — a dark halo keeps
+   them readable against arbitrary background pixels without brightening
+   the color itself. */
 .coord {
   font-family: var(--font-mono);
   font-size: var(--step--1);
   color: var(--ink-faint);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 1px 4px oklch(0 0 0 / 0.7);
 }
 
 /* Layout shell — content is the signal over a fixed grid */
@@ -87,12 +93,14 @@ canvas.sinteza-bg {
 
 /* ── GlobalPlayer — persistent bottom bar, transition:persist'd across
    every page. Styled globally (not per-page scoped) since it lives once
-   in Base.astro. See src/components/islands/GlobalPlayer.tsx. ── */
+   in Base.astro. See src/components/islands/GlobalPlayer.tsx. A soft
+   ambient shadow instead of a hard top border, matching the rest of the
+   site's no-hard-edges panels. ── */
 .global-player {
   position: fixed; inset: auto 0 0 0; z-index: 20;
-  border-top: var(--border);
-  background: color-mix(in oklch, var(--bg) 85%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in oklch, var(--bg) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 -1px 0 var(--hairline), 0 -20px 40px -20px oklch(0 0 0 / 0.5);
 }
 .gp-shell {
   display: flex; align-items: center; gap: 0.9rem;
@@ -107,20 +115,77 @@ canvas.sinteza-bg {
 }
 .gp-btn:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
 .gp-btn:disabled { opacity: 0.35; cursor: default; }
+.gp-btn-active { color: var(--accent); border-color: var(--accent); }
 .gp-play { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 .gp-play:hover { transform: scale(1.05); }
-.gp-scope {
-  width: clamp(80px, 14vw, 180px); height: 2.4rem; flex-shrink: 0;
-  border-radius: var(--radius); background: var(--bg-sunken);
-}
+
+.gp-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 .gp-title {
   font-size: var(--step--1); color: var(--ink-dim);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .gp-title b { color: var(--ink); font-weight: 500; }
 .gp-hint { color: var(--ink-faint); }
+
+.gp-seekrow { display: flex; align-items: center; gap: 0.6rem; }
+.gp-time {
+  font-size: var(--step--1); color: var(--ink-faint); font-variant-numeric: tabular-nums;
+  flex-shrink: 0; width: 2.6em;
+}
+.gp-time:last-child { text-align: right; }
+
+/* Custom range-input track/thumb — the accent-filled portion (--gp-seek-pct,
+   set inline per render) reads as progress without extra DOM. */
+.gp-seek {
+  -webkit-appearance: none; appearance: none;
+  flex: 1 1 auto; min-width: 0; height: 4px; border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--accent) 0%, var(--accent) var(--gp-seek-pct, 0%), var(--hairline) var(--gp-seek-pct, 0%), var(--hairline) 100%);
+  cursor: pointer;
+}
+.gp-seek:disabled { cursor: default; opacity: 0.5; }
+.gp-seek::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px oklch(0 0 0 / 0.3);
+  transition: transform 0.15s var(--ease-scope);
+}
+.gp-seek:hover::-webkit-slider-thumb, .gp-seek:active::-webkit-slider-thumb { transform: scale(1.3); }
+.gp-seek::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%; border: 0;
+  background: var(--accent); box-shadow: 0 0 0 3px oklch(0 0 0 / 0.3);
+}
+.gp-seek::-moz-range-track { height: 4px; border-radius: 999px; background: var(--hairline); }
+.gp-seek::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--accent); }
+
+/* Queue panel — floats above the bar (not inside its flow), same glass-panel
+   language as nav/cards elsewhere. */
+.gp-queue {
+  position: absolute; inset: auto 0 100% 0; z-index: 21; pointer-events: none;
+  padding-bottom: 0.75rem;
+}
+.gp-queue ul {
+  pointer-events: auto;
+  list-style: none; max-height: 45vh; overflow-y: auto;
+  border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--panel-highlight), var(--panel-shadow);
+}
+.gp-queue button {
+  display: flex; align-items: center; gap: 0.8rem; width: 100%;
+  background: none; border: 0; border-bottom: var(--border);
+  color: var(--ink-dim); font-family: var(--font-mono); font-size: var(--step--1);
+  padding: 0.65rem 1rem; cursor: pointer; text-align: left;
+}
+.gp-queue li:last-child button { border-bottom: 0; }
+.gp-queue button:hover { color: var(--ink); background: color-mix(in oklch, var(--bg-raise) 40%, transparent); }
+.gp-queue-index { color: var(--ink-faint); flex-shrink: 0; width: 1.4em; }
+.gp-queue-active { color: var(--accent) !important; }
+.gp-queue-active .gp-queue-index { color: var(--accent); }
+.gp-queue-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 @media (max-width: 620px) {
-  .gp-scope { display: none; }
+  .gp-time { display: none; }
 }
 
 /* ── Chip ticker — shared "newsreel" mechanics for every .stack (tech
@@ -142,6 +207,14 @@ canvas.sinteza-bg {
   animation: chip-ticker 16s linear infinite;
 }
 .ticker-viewport:hover > ul { animation-play-state: paused; }
+/* Blank spacer between each repetition (see padForTicker's `null` markers)
+   so a short list reads as "cycling", not one run-on repeat of the same
+   words — !important because it must win over each page's own .stack li /
+   .tags li pill styling regardless of Astro's scoped-style specificity. */
+.ticker-gap {
+  flex: 0 0 2.5rem;
+  border: 0 !important; padding: 0 !important; background: none !important;
+}
 @keyframes chip-ticker {
   to { transform: translateX(-50%); }
 }
