@@ -4,6 +4,25 @@
 
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 
+/* The two transition:persist'd elements (SintezaBackground's canvas,
+   GlobalPlayer's audio bar — see Base.astro) never visually change between
+   pages, so the browser's default View Transition crossfade for them is
+   pure downside: it still applies an opacity/mix-blend-mode animation to
+   their ::view-transition-old/new pseudo-elements even though the DOM node
+   itself is persisted, not swapped. A <canvas> repaints through that
+   unaffected, but the player's cross-origin SoundCloud iframe is exactly
+   the kind of embedded media that can get disrupted by a transient
+   visibility/compositing change — the likely cause of playback cutting on
+   navigation. Disabling the animation removes the effect entirely; the
+   persistence itself (transition:persist) is untouched. */
+::view-transition-old(sinteza-bg),
+::view-transition-new(sinteza-bg),
+::view-transition-old(global-player),
+::view-transition-new(global-player) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
