@@ -31,7 +31,7 @@ const nav = [
 
   <header class="shell music-hero">
     <div class="music-scope">
-      <Oscilloscope client:load mode="wave" height={360} />
+      <Oscilloscope client:load mode="wave" height={150} />
     </div>
     <div class="hero-copy">
       <span class="coord">02 / SIGNAL</span>
@@ -112,7 +112,13 @@ const nav = [
     .nav ul { display: none; }
   }
 
-  .music-hero { padding-top: clamp(2rem, 6vw, 6rem); }
+  /* Shared with .projects-hero/.devlog-hero so the three nav-adjacent
+     pages don't jump height on navigation (jarring with View Transitions). */
+  .music-hero {
+    padding-top: clamp(2rem, 5vw, 4rem);
+    min-height: clamp(420px, 46vh, 520px);
+    display: flex; flex-direction: column; justify-content: center;
+  }
   .music-scope {
     border: var(--border); border-radius: var(--radius-panel);
     background: var(--bg-sunken); overflow: hidden;

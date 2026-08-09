@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { getCollection } from "astro:content";
 import { musicEmbedSrc } from "../lib/embeds";
+import { padForTicker } from "../lib/ticker";
 
 // Federated projects — may be empty on first run before manifest repos exist.
 let projects: any[] = [];
@@ -115,9 +116,12 @@ const nav = [
               <span class="card-status coord">{p.status}</span>
               <h3>{p.title}</h3>
               <p class="card-tag">{p.tagline}</p>
-              <ul class="stack">
-                {p.stack.slice(0, 4).map((s: string) => <li>{s}</li>)}
-              </ul>
+              <div class="ticker-viewport">
+                <ul class="stack">
+                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li>{s}</li>)}
+                  {padForTicker(p.stack.slice(0, 4)).map((s: string) => <li aria-hidden="true">{s}</li>)}
+                </ul>
+              </div>
             </a>
           </li>
         ))}
@@ -314,8 +318,9 @@ const nav = [
   .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
   .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
   .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
-  .stack { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); }
+  /* Ticker scroll mechanics live in global.css; this just keeps the pill look. */
+  .stack { list-style: none; }
+  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
 
   .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
   .empty code { color: var(--accent); }
