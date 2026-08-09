@@ -4,5 +4,6 @@
   "embedId": "stcksmsh/sigsegv",
   "year": 2026,
   "accent": [0.68, 0.22, 25],
-  "envelope": "/audio-envelopes/sigsegv.json"
+  "envelope": "/audio-envelopes/sigsegv.json",
+  "sidecar": "/sidecars/sigsegv.sidecar.json"
 }
