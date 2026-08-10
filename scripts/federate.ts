@@ -86,12 +86,18 @@ async function listTree(repo: string, branch: string) {
   return data.tree;
 }
 
-// Mirrors <branch>/<base>/page/** (if present) into src/generated/projects/
-// <slug>/ (code) and public/generated/projects/<slug>/ (everything else).
-// Returns true if a page/entry.tsx was found — the site only switches a
-// project to full-custom-page mode when that exact file exists.
-async function federateCustomPage(repo: string, branch: string, base: string, slug: string) {
-  const prefix = [base, "page"].filter(Boolean).join("/") + "/";
+// Mirrors <branch>/<contentPath>/page/** (if present) into src/generated/
+// projects/<slug>/ (code) and public/generated/projects/<slug>/ (everything
+// else). Returns true if a page/entry.tsx was found — the site only
+// switches a project to full-custom-page mode when that exact file exists.
+//
+// Note: the git-trees API scopes `branch` in the URL itself, so returned
+// paths are already branch-relative (no branch-name prefix) — only
+// contentPath (if any) needs to be part of the filter prefix here. raw.
+// githubusercontent.com URLs are the opposite: they need the branch name
+// explicitly in the path.
+async function federateCustomPage(repo: string, branch: string, contentPath: string, slug: string) {
+  const prefix = [contentPath, "page"].filter(Boolean).join("/") + "/";
   const tree = await listTree(repo, branch);
   const files = tree.filter((n) => n.type === "blob" && n.path.startsWith(prefix));
   let entryFound = false;
@@ -99,7 +105,7 @@ async function federateCustomPage(repo: string, branch: string, base: string, sl
     const rel = f.path.slice(prefix.length);
     const isCode = CODE_EXTENSIONS.has(extname(rel));
     const dest = `${isCode ? "src" : "public"}/generated/projects/${slug}/${rel}`;
-    const buf = await fetchBinary(`${RAW}/${repo}/${f.path}`);
+    const buf = await fetchBinary(`${RAW}/${repo}/${branch}/${f.path}`);
     if (!buf) continue;
     await mkdir(dirname(dest), { recursive: true });
     await writeFile(dest, buf);
@@ -153,7 +159,7 @@ async function main() {
       index.push({ project: meta.slug, file: name });
     }
 
-    const hasCustomPage = await federateCustomPage(p.repo, p.branch, base, meta.slug);
+    const hasCustomPage = await federateCustomPage(p.repo, p.branch, p.contentPath, meta.slug);
     console.log(`✓ ${meta.slug}: ${files.length} devlog(s)${hasCustomPage ? ", custom page" : ""}`);
   }
 
