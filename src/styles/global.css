@@ -61,14 +61,24 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
    the persistent visualizer canvas outside any glass card (section heads,
    footer, etc.) with nothing else boosting contrast — a dark halo keeps
    them readable against arbitrary background pixels without brightening
-   the color itself. */
+   the color itself. A single soft shadow isn't enough on its own: the
+   visualizer's brighter/saturated regions (the orbit rings, the bloom
+   around the memory-field shape) can wash out a 4px blur entirely, going
+   from "faint but legible" to "gone" — confirmed by screenshotting every
+   page and finding coords like "02 / SIGNAL" essentially invisible over
+   the shape's glow. Layered tight+wide shadows read as a real dark edge
+   around each glyph regardless of what's behind it, not just a soft glow
+   that a bright enough background can still overpower. */
 .coord {
   font-family: var(--font-mono);
   font-size: var(--step--1);
   color: var(--ink-faint);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-shadow: 0 1px 4px oklch(0 0 0 / 0.7);
+  text-shadow:
+    0 0 2px oklch(0 0 0 / 0.9),
+    0 0 6px oklch(0 0 0 / 0.85),
+    0 1px 3px oklch(0 0 0 / 0.9);
 }
 
 /* Layout shell — content is the signal over a fixed grid */
