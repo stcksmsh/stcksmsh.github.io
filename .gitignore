@@ -5,4 +5,5 @@ dist/
 src/content/projects/
 src/content/devlogs/
 src/content/_federation.json
-public/demo/
+src/generated/projects/
+public/generated/projects/

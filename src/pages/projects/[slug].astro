@@ -28,6 +28,32 @@ const rendered = await Promise.all(
   })
 );
 
+// Projects can ship a full custom hero instead of the standard one below —
+// see AGENTS.md's "custom project pages" section for the io-page page/
+// bundle contract. federate.ts mirrors a project's page/ bundle (if any)
+// into src/generated/projects/<slug>/. Only the hero is replaceable: the
+// devlog stream further down always stays the site's own generic,
+// server-rendered section, for every project — a custom page owns its own
+// narrative/interactive content, not the devlog archive.
+//
+// A component picked up this way can't go through Astro's client:*
+// directives (they require a static import in this file's own frontmatter
+// to generate a hydration entry — a glob-derived reference doesn't
+// qualify, fails at build with "NoMatchingImport"), so it's mounted by
+// hand in a plain <script> below instead — lazily, so only the current
+// page's custom entry ever ships.
+interface DevlogSummary { id: string; title: string; date: string; tags: string[] }
+
+const customPageLoaders = import.meta.glob("../../generated/projects/*/entry.tsx");
+const hasCustomPage = `../../generated/projects/${project.slug}/entry.tsx` in customPageLoaders;
+
+const devlogSummaries: DevlogSummary[] = devlogs.map((entry) => ({
+  id: entry.id,
+  title: entry.data.title,
+  date: entry.data.date.toISOString(),
+  tags: entry.data.tags,
+}));
+
 const nav = [
   ["projects", "/projects"],
   ["music", "/music"],
@@ -45,25 +71,34 @@ const nav = [
     </ul>
   </nav>
 
-  <header class="project-hero">
-    <div class="project-hero-scrim"></div>
-    <div class="shell project-hero-inner">
-      <span class="coord">{project.status}</span>
-      <h1>{project.title}</h1>
-      <p class="lede">{project.tagline}</p>
-      <div class="ticker-viewport" aria-hidden="true">
-        <ul class="stack">
-          {[...padForTicker(project.stack), ...padForTicker(project.stack)].map((s: string | null) =>
-            s === null ? <li class="ticker-gap" /> : <li>{s}</li>
-          )}
-        </ul>
+  {hasCustomPage ? (
+    <div
+      id="project-custom-root"
+      data-slug={project.slug}
+      data-project={JSON.stringify(project)}
+      data-devlogs={JSON.stringify(devlogSummaries)}
+    />
+  ) : (
+    <header class="project-hero">
+      <div class="project-hero-scrim"></div>
+      <div class="shell project-hero-inner">
+        <span class="coord">{project.status}</span>
+        <h1>{project.title}</h1>
+        <p class="lede">{project.tagline}</p>
+        <div class="ticker-viewport" aria-hidden="true">
+          <ul class="stack">
+            {[...padForTicker(project.stack), ...padForTicker(project.stack)].map((s: string | null) =>
+              s === null ? <li class="ticker-gap" /> : <li>{s}</li>
+            )}
+          </ul>
+        </div>
+        <div class="project-links">
+          <a href={project.repo}>repo →</a>
+          {project.demo && <a href={project.demo}>demo →</a>}
+        </div>
       </div>
-      <div class="project-links">
-        <a href={project.repo}>repo →</a>
-        {project.demo && <a href={project.demo}>demo →</a>}
-      </div>
-    </div>
-  </header>
+    </header>
+  )}
 
   <section class="shell" id="devlog-stream">
     <div class="section-head">
@@ -101,6 +136,39 @@ const nav = [
     )}
   </section>
 </Base>
+
+{/*
+  Manual mount for a project's custom hero — see the frontmatter comment
+  above hasCustomPage for why this can't go through Astro's own client:*
+  hydration. Lazy (only the current page's entry.tsx, and whatever it
+  imports, is ever fetched) and a no-op on every page without a
+  #project-custom-root. Deliberately NOT wrapped in {hasCustomPage && ...}:
+  Astro can only hoist/process a <script> it can find via static analysis
+  of the template, so a conditionally-rendered <script> is silently left
+  as unprocessed inline text (raw TS syntax, no bundling) instead of being
+  compiled — this one must stay unconditional in the markup.
+*/}
+<script>
+  (async () => {
+    const root = document.getElementById("project-custom-root");
+    if (!root) return;
+    const slug = root.dataset.slug;
+    const loaders = import.meta.glob("../../generated/projects/*/entry.tsx") as Record<
+      string,
+      () => Promise<{ default: (props: { project: unknown; devlogs: unknown }) => any }>
+    >;
+    const load = loaders[`../../generated/projects/${slug}/entry.tsx`];
+    if (!load) return;
+    const [{ default: Component }, { createElement }, { createRoot }] = await Promise.all([
+      load(),
+      import("react"),
+      import("react-dom/client"),
+    ]);
+    const project = JSON.parse(root.dataset.project ?? "null");
+    const devlogs = JSON.parse(root.dataset.devlogs ?? "[]");
+    createRoot(root).render(createElement(Component, { project, devlogs }));
+  })();
+</script>
 
 <style>
   .nav {
