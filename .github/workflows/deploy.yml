@@ -28,6 +28,17 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # package-lock.json pins sinteza-viz to a resolved commit SHA, not just
+      # the branch — a merge to hysteresis#master (which is what pings this
+      # workflow via workflow_dispatch, see notify-site.yml over there) does
+      # NOT change that pin, so npm ci alone would silently keep building the
+      # old, already-stale code. Re-resolving it here on every build (cheap:
+      # one package) is what actually makes "push to hysteresis" reach this
+      # site without a separate manual lockfile-bump PR each time — --no-save
+      # keeps it out of package.json/package-lock.json, since committing a
+      # moving pin on every CI run would just thrash the lockfile for no
+      # reproducibility benefit (this is a live-site build, not a release).
+      - run: npm install sinteza-viz@github:stcksmsh/hysteresis#master --no-save
       # federate pulls io-page content from every manifest repo, then builds
       - run: npm run build
         env:
