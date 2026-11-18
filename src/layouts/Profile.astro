@@ -1,0 +1,37 @@
+---
+// Clean shell for the personal/professional experience (root + CV).
+// Deliberately mounts nothing global: no SintezaBackground, no GlobalPlayer,
+// no ViewTransitions, no global.css. Each page brings its own styles and fonts.
+interface Props {
+  title: string;
+  description: string;
+  /** Google Fonts stylesheet URL for this page, if any. */
+  fonts?: string;
+  noindex?: boolean;
+}
+const { title, description, fonts, noindex = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="data:," />
+    {fonts && <link rel="preconnect" href="https://fonts.googleapis.com" />}
+    {fonts && <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />}
+    {fonts && <link rel="stylesheet" href={fonts} />}
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
