@@ -1,0 +1,250 @@
+---
+// Concept C — "Datasheet": the profile laid out as an engineering component datasheet.
+// Subject link: automotive embedded/Android engineering; brief's C4 "technical manual" reference.
+// Career = revision history, olympiads = characterisation data, projects = application notes.
+import { identity as id, loadProtoContent } from "./_content";
+const c = await loadProtoContent();
+const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
+const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
+const firstYear = yearOf(c.experience.at(-1)?.start);
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="data:," />
+  <title>{id.name} — Concept C: Datasheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <div class="maker"><span class="logo" aria-hidden="true">KV</span><span>{id.location}</span></div>
+      <nav aria-label="Primary" class="mono">
+        <a href="#rev">Revision history</a>
+        <a href="#app">Applications</a>
+        <a href={id.cv} class="hl">CV ↓</a>
+        <a href={`mailto:${id.email}`} class="hl">Contact</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="title" aria-labelledby="name">
+        <div class="pn mono">
+          <span>Part no.</span><b>KV-SWE-II</b>
+          <span>Status</span><b class="ok">In production</b>
+          <span>Since</span><b>{firstYear}</b>
+        </div>
+        <h1 id="name">{id.name}</h1>
+        <p class="sub">{id.role} — {id.employer}</p>
+        <div class="rule" aria-hidden="true"></div>
+      </section>
+
+      <section class="cols" aria-label="Overview">
+        <div class="block">
+          <h2><span class="n mono">1</span>Features</h2>
+          <ul class="feat">
+            <li>Production Android engineering for vehicle infotainment, since {firstYear}</li>
+            <li>Kotlin-first; shipped customer-facing navigation features</li>
+            <li>Mathematics olympiad background: IMO, BMO, IOI</li>
+            <li>Independent builder: tools, Android apps, audio and web experiments</li>
+          </ul>
+        </div>
+        <div class="block">
+          <h2><span class="n mono">2</span>Description</h2>
+          <p class="desc">{id.intro.join(" ")}</p>
+          <div class="cta">
+            <a href={id.cv} class="btn">Download full CV</a>
+            <a href={`mailto:${id.email}`} class="btn ghost">Email</a>
+          </div>
+        </div>
+        <figure class="block fig">
+          <figcaption class="mono">Figure 1. Functional block diagram</figcaption>
+          <svg viewBox="0 0 320 210" role="img" aria-labelledby="fig1">
+            <title id="fig1">Block diagram: mathematics and computer science feed into Android engineering at {id.employer}, which outputs shipped vehicle features; side projects branch off.</title>
+            <g class="blk"><rect x="8" y="20" width="92" height="44" /><text x="54" y="47">MATH</text></g>
+            <g class="blk"><rect x="8" y="140" width="92" height="44" /><text x="54" y="167">CS / ETF</text></g>
+            <g class="blk core"><rect x="128" y="70" width="104" height="64" /><text x="180" y="99">ANDROID</text><text x="180" y="117" class="small">KOTLIN · AUTO</text></g>
+            <g class="blk"><rect x="252" y="80" width="60" height="44" /><text x="282" y="107">OUT</text></g>
+            <path d="M100 42 H114 V92 H128 M100 162 H114 V112 H128 M232 102 H252" class="wire" />
+            <path d="M180 134 V190 H300" class="wire dash" />
+            <text x="312" y="204" class="small" style="text-anchor:end">side projects</text>
+          </svg>
+        </figure>
+      </section>
+
+      <section id="rev" class="block wide" aria-labelledby="rev-h">
+        <h2 id="rev-h"><span class="n mono">3</span>Revision history</h2>
+        <div class="tbl">
+          <table>
+            <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Role</th><th scope="col">Organisation</th><th scope="col">Notes</th></tr></thead>
+            <tbody>
+              {c.experience.map((e, i) => (
+                <tr class={i === 0 ? "cur" : ""}>
+                  <td class="mono">{String.fromCharCode(65 + c.experience.length - 1 - i)}</td>
+                  <td class="mono nowrap">{range(e.start, e.end)}</td>
+                  <th scope="row">{e.title}</th>
+                  <td>{e.org}</td>
+                  <td class="notes">{e.Body ? <details><summary>Read</summary><e.Body /></details> : "—"}</td>
+                </tr>
+              ))}
+              {c.education.map((e) => (
+                <tr class="edu">
+                  <td class="mono">—</td>
+                  <td class="mono nowrap">{range(e.start, e.end)}</td>
+                  <th scope="row">{e.title}</th>
+                  <td>{e.org}</td>
+                  <td>Education</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="cols two">
+        <div class="block" aria-labelledby="char-h">
+          <h2 id="char-h"><span class="n mono">4</span>Characterisation data</h2>
+          <table class="kv">
+            <caption class="mono">Table 4-1. Competition results</caption>
+            <tbody>
+              {c.awards.map((a) => (
+                <tr><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="block" aria-labelledby="spec-h">
+          <h2 id="spec-h"><span class="n mono">5</span>Specifications</h2>
+          <dl class="spec">
+            <dt>Skills</dt><dd>{c.skills.map((x) => x.title).join(", ")}</dd>
+            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join("; ")}</dd>
+            <dt>Location</dt><dd>{id.location}</dd>
+          </dl>
+        </div>
+      </section>
+
+      {c.projects.length > 0 && (
+        <section id="app" class="block wide" aria-labelledby="app-h">
+          <h2 id="app-h"><span class="n mono">6</span>Application notes — selected work</h2>
+          <ol class="apps">
+            {c.projects.map((p, i) => (
+              <li>
+                <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
+                <a href={`/projects/${p.slug}`}><b>{p.title}</b></a>
+                <span class="tag">{p.tagline}</span>
+                <span class="mono st">{p.stack.join(" · ")}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      <section class="block wide order" aria-labelledby="ord-h">
+        <h2 id="ord-h"><span class="n mono">7</span>Ordering information</h2>
+        <ul class="mono">
+          <li><span>Email</span><a href={`mailto:${id.email}`}>{id.email}</a></li>
+          <li><span>LinkedIn</span><a href={id.linkedin}>kostavukicevic</a></li>
+          <li><span>GitHub</span><a href={id.github}>stcksmsh</a></li>
+          <li><span>CV</span><a href={id.cv}>/cv — printable</a></li>
+        </ul>
+      </section>
+    </main>
+    <footer class="foot mono"><span>{id.name}</span><span>KV-SWE-II · Rev {String.fromCharCode(64 + c.experience.length)}</span></footer>
+  </div>
+</body>
+</html>
+
+<style is:global>
+  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --line: #111; --hi: #ffd400; --blue: #0b4fb3; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; font-variation-settings: "wdth" 100; }
+  a { color: var(--blue); }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .skip { position: absolute; left: -999px; } .skip:focus { left: 16px; top: 8px; background: var(--ink); color: #fff; padding: 6px 10px; z-index: 9; }
+
+  .sheet { max-width: 1180px; margin: clamp(0px, 3vw, 40px) auto; background: var(--paper); border: 2px solid var(--line); box-shadow: 10px 10px 0 var(--ink); }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 2px solid var(--line); flex-wrap: wrap; }
+  .maker { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; font-variation-settings: "wdth" 125; letter-spacing: .04em; }
+  .top nav { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; }
+  .top nav a { color: var(--ink); text-decoration: none; }
+  .top nav a.hl { background: var(--hi); padding: 2px 8px; font-weight: 600; }
+
+  .title { padding: clamp(28px, 6vw, 72px) clamp(16px, 4vw, 40px) 0; position: relative; }
+  .pn { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 13px; position: absolute; right: clamp(16px, 4vw, 40px); top: clamp(28px, 6vw, 72px); border: 2px solid var(--line); padding: 8px 12px; }
+  .pn span { color: var(--dim); } .pn .ok { background: var(--hi); padding: 0 4px; }
+  h1 { font-size: clamp(52px, 10.5vw, 148px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.01em; margin: 0; max-width: 9ch; }
+  .sub { font-size: clamp(18px, 2.2vw, 26px); font-weight: 600; font-variation-settings: "wdth" 85; margin: 14px 0 0; }
+  .rule { height: 14px; margin: 26px 0 0; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10px); border-bottom: 2px solid var(--line); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr 1.15fr; border-bottom: 2px solid var(--line); }
+  .cols.two { grid-template-columns: 1fr 1fr; }
+  .cols > .block + .block { border-left: 2px solid var(--line); }
+  .block { padding: 22px clamp(16px, 3vw, 28px) 26px; margin: 0; }
+  .wide { border-bottom: 2px solid var(--line); }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 14px; display: flex; gap: 10px; align-items: baseline; }
+  .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }
+  .feat { margin: 0; padding-left: 1.1em; } .feat li { margin-bottom: 8px; } .feat li::marker { content: "■  "; font-size: .7em; }
+  .desc { margin: 0 0 18px; font-size: 17px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { background: var(--ink); color: #fff; padding: 9px 16px; text-decoration: none; font-weight: 700; }
+  .btn.ghost { background: var(--hi); color: var(--ink); }
+  .fig figcaption { font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+  .fig svg { width: 100%; height: auto; }
+  .blk rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+  .blk.core rect { fill: var(--hi); }
+  .blk text, svg .small { font: 700 13px "Archivo", sans-serif; text-anchor: middle; fill: var(--ink); }
+  svg .small { font-weight: 500; font-size: 10px; }
+  .wire { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .dash { stroke-dasharray: 4 4; }
+
+  .tbl { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  #rev th, #rev td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid #bbb; vertical-align: top; }
+  #rev thead th { border-bottom: 2px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  #rev tbody th { font-weight: 700; }
+  #rev tr.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
+  #rev tr.edu td, #rev tr.edu th { color: var(--dim); }
+  .nowrap { white-space: nowrap; font-size: 13px; }
+  .notes details { max-width: 34em; } .notes summary { cursor: pointer; color: var(--blue); } .notes p { margin: 8px 0; }
+  .kv caption { text-align: left; font-size: 12px; color: var(--dim); padding-bottom: 6px; }
+  .kv td, .kv th { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid #bbb; font-weight: 600; }
+  .kv td { font-weight: 400; width: 4.5em; }
+  .spec { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec dt { font-weight: 700; } .spec dd { margin: 0; }
+
+  .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+  .apps li { display: grid; grid-template-columns: 4.5em 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid #bbb; }
+  .an { grid-row: span 3; font-size: 12px; color: var(--dim); padding-top: 3px; }
+  .apps a { color: var(--ink); font-size: 18px; } .apps a:hover { color: var(--blue); }
+  .tag { font-size: 15px; } .st { font-size: 11px; color: var(--dim); }
+
+  .order ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .order li { border: 2px solid var(--line); padding: 10px 12px; display: grid; gap: 4px; font-size: 14px; overflow-wrap: anywhere; }
+  .order li span { font-size: 11px; color: var(--dim); text-transform: uppercase; }
+  .foot { display: flex; justify-content: space-between; padding: 10px 20px; font-size: 12px; color: var(--dim); }
+
+  @media (max-width: 900px) {
+    .cols, .cols.two { grid-template-columns: 1fr; }
+    .cols > .block + .block { border-left: 0; border-top: 2px solid var(--line); }
+    .apps { grid-template-columns: 1fr; }
+    .order ul { grid-template-columns: 1fr 1fr; }
+    .pn { position: static; display: inline-grid; margin-bottom: 18px; }
+  }
+  @media (max-width: 560px) {
+    .sheet { box-shadow: none; border-width: 0 0 2px; }
+    .top nav a:not(.hl) { display: none; }
+    #rev thead { display: none; }
+    #rev tr { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 10px 0; border-bottom: 1px solid #bbb; }
+    #rev th, #rev td { border: 0; padding: 0; }
+    #rev td:first-child { grid-row: span 4; }
+    .order ul { grid-template-columns: 1fr; }
+  }
+</style>
