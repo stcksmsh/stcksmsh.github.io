@@ -2,25 +2,17 @@
 // Concept C — "Datasheet": the profile laid out as an engineering component datasheet.
 // Subject link: automotive embedded/Android engineering; brief's C4 "technical manual" reference.
 // Career = revision history, olympiads = characterisation data, projects = application notes.
-import { identity as id, loadProtoContent } from "./_content";
-const c = await loadProtoContent();
+import Profile from "../../layouts/Profile.astro";
+import { identity as id, loadProfile } from "../../data/profile";
+const c = await loadProfile();
+const cv = "/proto/c-cv"; // prototype CV in the same style
 const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const firstYear = yearOf(c.experience.at(-1)?.start);
+// Revisions: oldest role = Rev A, current role = highest letter.
+const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i);
 ---
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex" />
-  <link rel="icon" href="data:," />
-  <title>{id.name} — Concept C: Datasheet</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-</head>
-<body>
+<Profile title={`${id.name} — Concept C: Datasheet`} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap" noindex>
   <a class="skip" href="#main">Skip to content</a>
   <div class="sheet">
     <header class="top">
@@ -28,28 +20,30 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
       <nav aria-label="Primary" class="mono">
         <a href="#rev">Revision history</a>
         <a href="#app">Applications</a>
-        <a href={id.cv} class="hl">CV ↓</a>
+        <a href={cv} class="hl">CV ↓</a>
         <a href={`mailto:${id.email}`} class="hl">Contact</a>
       </nav>
     </header>
 
     <main id="main">
       <section class="title" aria-labelledby="name">
+        <h1 id="name">{id.name}</h1>
+        <p class="sub">{id.role} — {id.employer}</p>
         <div class="pn mono">
           <span>Part no.</span><b>KV-SWE-II</b>
           <span>Status</span><b class="ok">In production</b>
-          <span>Since</span><b>{firstYear}</b>
+          {firstYear && <><span>Since</span><b>{firstYear}</b></>}
         </div>
-        <h1 id="name">{id.name}</h1>
-        <p class="sub">{id.role} — {id.employer}</p>
         <div class="rule" aria-hidden="true"></div>
       </section>
 
-      <section class="cols" aria-label="Overview">
+      <section class="cols">
         <div class="block">
           <h2><span class="n mono">1</span>Features</h2>
+          {/* Hand-condensed from: experience-1..4 (titles, orgs, intern body para 2), award-1..5, project list.
+              Re-check against src/content/cv when any of those change. */}
           <ul class="feat">
-            <li>Production Android engineering for vehicle infotainment, since {firstYear}</li>
+            <li>Production Android engineering for vehicle infotainment{firstYear && `, since ${firstYear}`}</li>
             <li>Kotlin-first; shipped customer-facing navigation features</li>
             <li>Mathematics olympiad background: IMO, BMO, IOI</li>
             <li>Independent builder: tools, Android apps, audio and web experiments</li>
@@ -59,7 +53,7 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
           <h2><span class="n mono">2</span>Description</h2>
           <p class="desc">{id.intro.join(" ")}</p>
           <div class="cta">
-            <a href={id.cv} class="btn">Download full CV</a>
+            <a href={cv} class="btn">Download full CV</a>
             <a href={`mailto:${id.email}`} class="btn ghost">Email</a>
           </div>
         </div>
@@ -86,20 +80,21 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
             <tbody>
               {c.experience.map((e, i) => (
                 <tr class={i === 0 ? "cur" : ""}>
-                  <td class="mono">{String.fromCharCode(65 + c.experience.length - 1 - i)}</td>
+                  <td class="mono">{rev(i)}</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
                   <td>{e.org}</td>
-                  <td class="notes">{e.Body ? <details><summary>Read</summary><e.Body /></details> : "—"}</td>
+                  <td class="notes">{e.Body ? <details><summary>Read<span class="sr-only"> notes: {e.title}</span></summary><e.Body /></details> : "—"}</td>
                 </tr>
               ))}
+              {c.education.length > 0 && <tr class="sep"><th colspan="5" scope="colgroup">Education</th></tr>}
               {c.education.map((e) => (
                 <tr class="edu">
                   <td class="mono">—</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
                   <td>{e.org}</td>
-                  <td>Education</td>
+                  <td>—</td>
                 </tr>
               ))}
             </tbody>
@@ -151,14 +146,13 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
           <li><span>Email</span><a href={`mailto:${id.email}`}>{id.email}</a></li>
           <li><span>LinkedIn</span><a href={id.linkedin}>kostavukicevic</a></li>
           <li><span>GitHub</span><a href={id.github}>stcksmsh</a></li>
-          <li><span>CV</span><a href={id.cv}>/cv — printable</a></li>
+          <li><span>CV</span><a href={cv}>/cv — printable</a></li>
         </ul>
       </section>
     </main>
-    <footer class="foot mono"><span>{id.name}</span><span>KV-SWE-II · Rev {String.fromCharCode(64 + c.experience.length)}</span></footer>
+    <footer class="foot mono"><span>{id.name}</span><span>KV-SWE-II{c.experience.length > 0 && ` · Rev ${rev(0)}`}</span></footer>
   </div>
-</body>
-</html>
+</Profile>
 
 <style is:global>
   :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --line: #111; --hi: #ffd400; --blue: #0b4fb3; }
@@ -212,6 +206,8 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
   #rev tbody th { font-weight: 700; }
   #rev tr.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
   #rev tr.edu td, #rev tr.edu th { color: var(--dim); }
+  #rev tr.sep th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding-top: 16px; border-bottom: 2px solid var(--line); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .nowrap { white-space: nowrap; font-size: 13px; }
   .notes details { max-width: 34em; } .notes summary { cursor: pointer; color: var(--blue); } .notes p { margin: 8px 0; }
   .kv caption { text-align: left; font-size: 12px; color: var(--dim); padding-bottom: 6px; }
@@ -236,12 +232,13 @@ const firstYear = yearOf(c.experience.at(-1)?.start);
     .cols > .block + .block { border-left: 0; border-top: 2px solid var(--line); }
     .apps { grid-template-columns: 1fr; }
     .order ul { grid-template-columns: 1fr 1fr; }
-    .pn { position: static; display: inline-grid; margin-bottom: 18px; }
+    .pn { position: static; display: inline-grid; margin-top: 18px; }
   }
   @media (max-width: 560px) {
     .sheet { box-shadow: none; border-width: 0 0 2px; }
     .top nav a:not(.hl) { display: none; }
-    #rev thead { display: none; }
+    #rev thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    #rev tr.sep { display: block; }
     #rev tr { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 10px 0; border-bottom: 1px solid #bbb; }
     #rev th, #rev td { border: 0; padding: 0; }
     #rev td:first-child { grid-row: span 4; }

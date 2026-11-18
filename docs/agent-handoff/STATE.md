@@ -44,13 +44,15 @@
 | Agent operating model and overseer skill | Complete | This package |
 | Repository baseline audit | Complete 2026-11-19 | See "Current status" |
 | CV/content factual audit | Draft complete; owner: use as is for now | `CONTENT_AUDIT.md` |
-| Three rendered root concepts | Complete | `CONCEPTS.md`, `src/pages/proto/`, `proto-shots/` |
+| Three rendered root concepts | Complete + reviewed + fixed | `CONCEPTS.md`, `src/pages/proto/`, `proto-shots/` |
+| Clean layout + shared profile data | Complete (used by prototypes) | `src/layouts/Profile.astro`, `src/data/profile.ts` |
+| CV prototypes per concept + print check | Complete | `/proto/{a,b,c}-cv`, `proto-shots/*-cv.pdf` |
 | Owner visual decision | Not started | — |
 | Root + CV implementation | Not started | — |
 
 ## Active tasks / agents
 
-None yet.
+None. (One read-only review agent ran 2026-11-20 and finished; its findings are summarised in CONCEPTS.md.)
 
 For each active task record:
 - agent/session:
@@ -69,10 +71,11 @@ For each active task record:
 
 ## Last session checkpoint
 
+- 2026-11-20 (overnight): Profile layout + data module, CV prototypes, independent review + fixes, keyboard/print/overflow checks. Branch `proto/root-concepts`, local only, not pushed.
 - 2026-11-19: kit placed in `docs/agent-handoff/`; baseline verified; `CONTENT_AUDIT.md` written. Prototype routes added under `src/pages/proto/` only; no existing page touched.
 - Skill not installed: name `overseer` collides with the user's global Hysteresis `overseer` skill.
 
 ## Next exact action
 
 1. Owner picks A / B / C (or a combination) from `CONCEPTS.md`.
-2. Then milestone 2: new clean layout (no Base.astro), promote the chosen concept to `/`, restyle `/cv` to match + print check, delete `src/pages/proto/`. Before that, do a keyboard walkthrough and get an independent review.
+2. Then milestone 2: promote the chosen concept + its CV onto `/` and `/cv` using the existing `Profile.astro` + `src/data/profile.ts`, keep the legacy pages reachable until replacements are approved, then delete `src/pages/proto/`. Keyboard/print/review checks are already done for the prototypes; redo them on the promoted pages.

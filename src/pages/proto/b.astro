@@ -1,31 +1,21 @@
 ---
 // Concept B — "Paper": the profile typeset as a mathematics paper.
 // Subject link: olympiad mathematics background; projects become the bibliography.
-import { identity as id, loadProtoContent } from "./_content";
-const c = await loadProtoContent();
+import Profile from "../../layouts/Profile.astro";
+import { identity as id, loadProfile } from "../../data/profile";
+const c = await loadProfile();
+const cv = "/proto/b-cv"; // prototype CV in the same style
 const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 ---
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex" />
-  <link rel="icon" href="data:," />
-  <title>{id.name} — Concept B: Paper</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-</head>
-<body>
+<Profile title={`${id.name} — Concept B: Paper`} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Mono:wght@400;500&display=swap" noindex>
   <a class="skip" href="#main">Skip to content</a>
   <header class="runhead">
     <span class="sc">Vukićević</span>
     <nav aria-label="Primary">
       <a href="#s1">§1 Work</a>
       <a href="#refs">References</a>
-      <a href={id.cv}>CV</a>
-      <a href={`mailto:${id.email}`}>Correspondence</a>
+      <a href={cv}>CV</a>
+      <a href={`mailto:${id.email}`}>Contact</a>
     </nav>
   </header>
 
@@ -38,11 +28,11 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 
       <div class="abstract">
         <h2 class="sc">Abstract</h2>
-        <p>{id.intro.join(" ")} This document gives a constructive account of that claim, in four sections, with full references.</p>
+        <p>{id.intro.join(" ")}</p>
       </div>
       <p class="kw"><em>Keywords —</em> Android, Kotlin, automotive infotainment, competitive mathematics, sound.</p>
       <p class="actions">
-        <a class="cta" href={id.cv}>Full CV (printable)</a>
+        <a class="cta" href={cv}>Full CV (printable)</a>
         <a href={`mailto:${id.email}`}>{id.email}</a>
         <a href={id.linkedin}>LinkedIn</a>
         <a href={id.github}>GitHub</a>
@@ -56,16 +46,16 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
           <p class="thm-head"><span class="lbl">{i === 0 ? "Theorem" : "Lemma"} 1.{i + 1}</span> <span class="ttl">({e.title})</span></p>
           <aside class="margin mono">{range(e.start, e.end)}</aside>
           <p class="stmt"><em>Held at {e.org}, {range(e.start, e.end)}.</em></p>
-          {e.Body && <div class="proof"><span class="sc">Proof.</span> <e.Body /><span class="qed" aria-label="end of proof">∎</span></div>}
+          {e.Body && <div class="proof"><p class="sc proof-lbl">Proof.</p><e.Body /></div>}
         </article>
       ))}
     </section>
 
     <section id="s2">
       <h2><span class="num">2</span> Education</h2>
-      {c.education.map((e) => (
+      {c.education.map((e, i) => (
         <article class="thm">
-          <p class="thm-head"><span class="lbl">Definition 2.1</span> <span class="ttl">({e.title})</span></p>
+          <p class="thm-head"><span class="lbl">Definition 2.{i + 1}</span> <span class="ttl">({e.title})</span></p>
           <aside class="margin mono">{range(e.start, e.end)}</aside>
           <p class="stmt"><em>{e.org}, {range(e.start, e.end)}.</em></p>
         </article>
@@ -102,12 +92,11 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
     )}
 
     <footer class="corr">
-      <p><span class="sc">Correspondence</span> — <a href={`mailto:${id.email}`}>{id.email}</a> · <a href={id.linkedin}>LinkedIn</a> · <a href={id.github}>GitHub</a> · <a href={id.cv}>CV</a></p>
+      <p><span class="sc">Correspondence</span> — <a href={`mailto:${id.email}`}>{id.email}</a> · <a href={id.linkedin}>LinkedIn</a> · <a href={id.github}>GitHub</a> · <a href={cv}>CV</a></p>
       <p class="end" aria-hidden="true">∎</p>
     </footer>
   </main>
-</body>
-</html>
+</Profile>
 
 <style is:global>
   :root { --paper: #fbf8f1; --ink: #1b1a17; --dim: #6a655a; --red: #9b1c1c; --rule: #1b1a17; }
@@ -147,8 +136,8 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
   .lbl { font-weight: 700; }
   .ttl { font-style: normal; }
   .stmt { margin: 0; }
-  .proof { margin-top: 6px; } .proof p { display: inline; margin: 0; } .proof p + p::before { content: ""; display: block; height: .6em; }
-  .qed { float: right; }
+  .proof { margin-top: 6px; } .proof > * { margin: 0 0 .5em; } .proof-lbl { float: left; margin: 0 .4em 0 0; }
+  .proof::after { content: "∎"; display: block; text-align: right; margin-top: -1.6em; }
   .margin { position: absolute; left: calc(100% + 48px); top: 4px; width: 15rem; color: var(--dim); border-left: 2px solid var(--red); padding-left: 10px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 17px; margin: 14px 0; border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule); }

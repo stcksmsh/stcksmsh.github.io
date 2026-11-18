@@ -76,7 +76,7 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
   h1 { font-size: clamp(40px, 7vw, 72px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; margin: 0; }
   .sub { font-weight: 600; margin: 8px 0 0; font-size: 18px; }
   .contact { display: grid; grid-template-columns: auto auto; gap: 2px 12px; margin: 0; font-size: 13px; align-self: end; }
-  .contact dt { color: var(--dim); } .contact dd { margin: 0; }
+  .contact dt { color: var(--dim); } .contact dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
   .block { padding: 20px clamp(16px, 3vw, 28px); border-bottom: 2px solid var(--ink); }
   h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 12px; display: flex; gap: 10px; align-items: baseline; }
   .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }

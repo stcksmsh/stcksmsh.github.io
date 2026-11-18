@@ -1,36 +1,26 @@
 ---
 // Concept A — "Route": the career drawn as a transit line.
 // Subject link: Belgrade, the navigation team at Rivian, the bus-ticketing project.
-import { identity as id, loadProtoContent } from "./_content";
-const c = await loadProtoContent();
+import Profile from "../../layouts/Profile.astro";
+import { identity as id, loadProfile } from "../../data/profile";
+const c = await loadProfile();
+const cv = "/proto/a-cv"; // prototype CV in the same style
 const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 // Stations along the hero line, oldest → newest.
 const stations = [
-  ...c.education.map((e) => ({ label: "ETF Belgrade", year: yearOf(e.start) })),
+  ...c.education.map((e) => ({ label: e.org?.split(",")[0] ?? e.title, year: yearOf(e.start) })),
   ...[...c.experience].reverse().map((e) => ({ label: e.title.replace("Android Software Engineer", "Android SWE"), year: yearOf(e.start) })),
 ];
 ---
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex" />
-  <link rel="icon" href="data:," />
-  <title>{id.name} — Concept A: Route</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@400;600&display=swap" rel="stylesheet" />
-</head>
-<body>
+<Profile title={`${id.name} — Concept A: Route`} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;800;900&family=Overpass+Mono:wght@400;600&display=swap" noindex>
   <a class="skip" href="#main">Skip to content</a>
   <header class="bar">
     <a href="/proto/a" class="sign"><span class="bullet" aria-hidden="true">K</span>{id.name}</a>
     <nav aria-label="Primary">
       <a href="#work">Work</a>
       <a href="#projects">Projects</a>
-      <a href={id.cv} class="pill">CV</a>
+      <a href={cv} class="pill">CV</a>
       <a href={`mailto:${id.email}`} class="pill solid">Contact</a>
     </nav>
   </header>
@@ -43,7 +33,7 @@ const stations = [
         <p class="role">{id.role}<br /><span>at {id.employer}</span></p>
         <p class="intro">{id.intro.join(" ")}</p>
         <div class="cta">
-          <a class="btn" href={id.cv}>Read the CV →</a>
+          <a class="btn" href={cv}>Read the CV →</a>
           <a class="btn ghost" href={`mailto:${id.email}`}>{id.email}</a>
         </div>
       </div>
@@ -54,7 +44,7 @@ const stations = [
             <li class={i === stations.length - 1 ? "now" : ""}><span class="mono">{s.year}</span>{s.label}</li>
           ))}
         </ol>
-        <figcaption class="mono">Next stop → you decide</figcaption>
+        <figcaption class="mono">Next stop → <span class="mobile-only">swipe for the full line</span><span class="desk-only">yours to decide</span></figcaption>
       </figure>
     </section>
 
@@ -67,7 +57,9 @@ const stations = [
             <div>
               <h3>{e.title}</h3>
               <p class="org">{e.org}</p>
-              {e.Body && <div class="body"><e.Body /></div>}
+              {e.Body && (e.long
+                ? <details class="body"><summary>More about this role<span class="sr-only">: {e.title}</span></summary><e.Body /></details>
+                : <div class="body"><e.Body /></div>)}
             </div>
           </li>
         ))}
@@ -89,7 +81,7 @@ const stations = [
 
     {c.projects.length > 0 && (
       <section id="projects" class="interchange" aria-labelledby="proj-h">
-        <h2 id="proj-h"><span class="badge c">⇄</span>Connections — things I build</h2>
+        <h2 id="proj-h"><span class="badge c" aria-hidden="true">⇄</span>Connections — things I build</h2>
         <ul>
           {c.projects.map((p) => (
             <li>
@@ -112,12 +104,11 @@ const stations = [
         <li><a href={`mailto:${id.email}`}>{id.email}</a></li>
         <li><a href={id.linkedin}>LinkedIn</a></li>
         <li><a href={id.github}>GitHub</a></li>
-        <li><a href={id.cv}>CV</a></li>
+        <li><a href={cv}>CV</a></li>
       </ul>
     </section>
   </main>
-</body>
-</html>
+</Profile>
 
 <style is:global>
   :root {
@@ -150,6 +141,7 @@ const stations = [
   .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 
   .hero > * { min-width: 0; }
+  .mobile-only { display: none; }
   .map { margin: 0; align-self: center; }
   .stops { list-style: none; margin: 0; padding: 0 0 0 0; position: relative; }
   .stops::before { content: ""; position: absolute; left: 13px; top: 14px; bottom: -34px; width: 14px; border-radius: 7px; background: linear-gradient(var(--k) calc(100% - 40px), transparent 0), repeating-linear-gradient(var(--k) 0 4px, transparent 4px 12px); }
@@ -175,6 +167,8 @@ const stations = [
   .route h3 { margin: 0; font-size: 21px; font-weight: 800; line-height: 1.2; }
   .org { margin: 2px 0 0; color: var(--dim); }
   .body { max-width: 40em; margin-top: 10px; } .body p { margin: 0 0 10px; }
+  .body summary { cursor: pointer; color: var(--b); font-weight: 600; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .transfer { margin: 8px 0 0; font-size: 14px; color: var(--dim); }
 
   .interchange ul { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0; border-left: 2px solid var(--ink); border-top: 2px solid var(--ink); }
@@ -183,7 +177,7 @@ const stations = [
   .interchange a:hover { background: var(--ink); color: var(--paper); }
   .interchange h3 { margin: 8px 0 6px; font-size: 22px; font-weight: 900; }
   .interchange p { margin: 0 0 12px; font-size: 15px; }
-  .plat { display: inline-block; background: var(--c); color: #fff; font-size: 12px; padding: 1px 8px; text-transform: uppercase; letter-spacing: .08em; }
+  .plat { display: inline-block; background: #07784f; color: #fff; font-size: 12px; padding: 1px 8px; text-transform: uppercase; letter-spacing: .08em; }
   .stack { font-size: 12px; opacity: .75; }
 
   .terminus { background: var(--ink); color: var(--paper); max-width: none; border: 0; }
@@ -195,12 +189,14 @@ const stations = [
     .bar nav a:not(.pill) { display: none; }
     .sign { font-size: 15px; }
     .hero { grid-template-columns: 1fr; }
-    .stops { display: flex; overflow-x: auto; padding: 0 0 4px; }
+    .stops { display: flex; overflow-x: auto; padding: 0 0 4px; scroll-snap-type: x proximity; -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent); mask-image: linear-gradient(90deg, #000 80%, transparent); }
+    .stops li { scroll-snap-align: start; }
     .stops::before { left: 0; right: 0; top: 13px; bottom: auto; height: 10px; width: auto; background: var(--k); }
     .stops li { flex: none; padding: 40px 22px 0 0; font-size: 15px; }
     .stops li::before { left: 0; top: 2px; width: 32px; height: 32px; border-width: 5px; }
     .stops li.now { font-size: 15px; } .stops li.now::before { top: 0; width: 36px; height: 36px; }
     .map figcaption { padding: 8px 0 0; }
+    .mobile-only { display: inline; } .desk-only { display: none; }
     .route::before { left: 9px; }
     .route li { grid-template-columns: 1fr; padding-left: 44px; }
     .route li::before { left: 3px; } .route li.current::before { left: 0; }

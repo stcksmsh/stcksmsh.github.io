@@ -24,7 +24,7 @@ export async function loadProfile() {
   const by = (s: string) => cv.filter((e) => e.data.section === s).sort((a, b) => a.data.order - b.data.order);
 
   const experience = await Promise.all(
-    by("experience").map(async (e) => ({ ...e.data, Body: e.body?.trim() ? (await render(e)).Content : null })),
+    by("experience").map(async (e) => ({ ...e.data, Body: e.body?.trim() ? (await render(e)).Content : null, long: (e.body?.length ?? 0) > 400 })),
   );
 
   let projects: { slug: string; title: string; tagline: string; status: string; stack: string[]; repo: string }[] = [];
@@ -33,7 +33,8 @@ export async function loadProfile() {
       .map((p) => p.data)
       .filter((p) => p.featured)
       .sort((a, b) => a.order - b.order);
-  } catch {
+  } catch (err) {
+    console.warn("[profile] projects collection unavailable, omitting selected work:", err);
     // Federation unavailable: the concepts simply omit the projects block.
   }
 
