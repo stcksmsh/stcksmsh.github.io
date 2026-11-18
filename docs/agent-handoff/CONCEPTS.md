@@ -6,9 +6,9 @@ All three render the same data (`src/data/profile.ts`: CV collection + featured 
 |---|---|---|---|
 | Central idea | Career drawn as a transit line; stations = roles, the current role is the big red stop. Links to Belgrade and the navigation work. | Profile typeset as a mathematics preprint: abstract, numbered theorems for roles, a results table for olympiads, projects as the bibliography. | Profile as a component datasheet: part number, features, block diagram, career as **revision history**, olympiads as characterisation data, projects as application notes. |
 | Brief reference | A4 editorial + D3 data-viz | A4 editorial + mathematics | C4 technical manual + D4 interface |
-| Recruiter scan | Strong. Timeline reads at a glance; long intern body stretches the page | Medium. Prose-first; dates sit in the margin; slower to skim | Strongest. Revision table gives role/org/date in one block; long text tucked into `<details>` |
+| Recruiter scan | Strong. Timeline reads at a glance; long write-ups collapse | Medium. Prose-first; dates sit in the margin; slower to skim | Strongest. Revision table gives role/org/date in one block; long text tucked into `<details>` |
 | Distinctiveness | Medium-high; transit maps are a familiar trope, but the route is made from real data | High and personal; the gimmick is literary rather than visual | High; most "authored-feeling" first viewport |
-| Mobile | Good; the route becomes a horizontally scrolling strip (needs a swipe hint) | Good; reads like a long article | Good; table collapses into stacked rows, only CV/Contact kept in nav |
+| Mobile | Good; the route becomes a horizontally scrolling strip with a fade + swipe hint | Good; reads like a long article | Good; table collapses into stacked rows, only CV/Contact kept in nav |
 | Maths prominence | Equal with education | Very high (the whole concept) | Proportionate (feature bullet + results table) |
 | Risk | Intro + route compete for attention | Theorem/Lemma framing can read as too cute; serif-only | Can look cold or "corporate" if pushed further; joke density (part no., "in production") needs restraint |
 | Build cost to production | Low | Low | Low–medium (table/print variants) |
