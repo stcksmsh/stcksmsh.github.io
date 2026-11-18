@@ -7,9 +7,9 @@
 - **Phase:** Milestone 1 — concepts delivered, awaiting owner visual decision
 - **Current milestone:** Baseline + factual content audit + three visual prototypes
 - **Repository:** `stcksmsh/stcksmsh.github.io` — verified (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`)
-- **Branch:** `main`, in sync with `origin/main`
-- **HEAD:** `dfe539b` Pin sinteza-viz to hysteresis#ts-final
-- **Working tree:** untracked `docs/agent-handoff/` (this kit) and `public/demo/mouthpiece/` (pre-existing, not from this kit — owner to say whether it's meant to be committed)
+- **Branch:** `proto/root-concepts` (local, not pushed), branched from `main` @ `dfe539b`
+- **HEAD:** see `git log -1` on `proto/root-concepts`
+- **Working tree:** clean apart from `public/demo/mouthpiece/` (pre-existing, not from this kit — owner to say whether it's meant to be committed)
 - **Worktrees / PRs:** single worktree; ~18 stale `origin/claude/*` branches; no open PRs checked (gh output empty)
 - **Last verified build:** 2026-11-19, `npm run build` → federate OK, 13 pages built, Complete (local machine, not sandbox)
 - Brief delivered 2026-11-19 → `io-site-implementation-brief.md`.
@@ -69,7 +69,7 @@ For each active task record:
 
 ## Last session checkpoint
 
-- 2026-11-19: kit placed in `docs/agent-handoff/`; baseline verified; `CONTENT_AUDIT.md` written. No site code changed.
+- 2026-11-19: kit placed in `docs/agent-handoff/`; baseline verified; `CONTENT_AUDIT.md` written. Prototype routes added under `src/pages/proto/` only; no existing page touched.
 - Skill not installed: name `overseer` collides with the user's global Hysteresis `overseer` skill.
 
 ## Next exact action
