@@ -1,0 +1,29 @@
+---
+// GitHub Pages serves dist/404.html for any unknown path. Datasheet style, Profile layout.
+import Profile from "../layouts/Profile.astro";
+import { identity as id } from "../data/profile";
+---
+<Profile title={`Not found — ${id.name}`} description="This page does not exist." noindex fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+  <main class="nf">
+    <p class="mono code">ERR 404 · NO CONNECT</p>
+    <h1>Nothing is wired to this address.</h1>
+    <p>The page you asked for doesn't exist, or it moved.</p>
+    <ul class="mono">
+      <li><a href="/">Home</a></li>
+      <li><a href="/cv">CV</a></li>
+      <li><a href="/projects">Projects</a></li>
+    </ul>
+  </main>
+</Profile>
+
+<style is:global>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #e7e6e1; color: #111; font-family: Archivo, system-ui, sans-serif; padding: 24px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .nf { max-width: 560px; width: 100%; background: #fdfdfb; border: 2px solid #111; box-shadow: 10px 10px 0 #111; padding: clamp(20px, 5vw, 40px); }
+  .code { display: inline-block; background: #ffd400; padding: 2px 8px; font-size: 13px; font-weight: 600; margin: 0 0 16px; }
+  h1 { font-size: clamp(26px, 6vw, 40px); font-stretch: 80%; line-height: 1.05; margin: 0 0 12px; }
+  ul { list-style: none; padding: 0; margin: 24px 0 0; display: flex; gap: 20px; flex-wrap: wrap; }
+  a { color: #0b4fb3; }
+  a:focus-visible { outline: 3px solid #0b4fb3; outline-offset: 3px; }
+</style>

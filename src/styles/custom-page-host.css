@@ -1,0 +1,49 @@
+/* Host environment for a project's own custom hero (io-page `page/` bundle,
+   mounted into #project-custom-root on /projects/[slug]).
+   Custom pages were written against the legacy СИНТЕЗА look: tokens.css vars
+   plus a few global.css utilities (.shell, .coord, .ticker-*). This file is
+   that contract, scoped to the root so the datasheet page around it is
+   untouched. The root renders as a dark "screen" set into the datasheet.
+   Contract for custom pages: tokens.css vars, .shell, .coord, .ticker-viewport,
+   .ticker-gap, a zero margin/padding reset, Chakra Petch + JetBrains Mono. */
+@import "./tokens.css";
+
+.custom-screen {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: clamp(28px, 4vw, 48px) clamp(28px, 4vw, 48px);
+  border-bottom: 2px solid #111;
+  padding-bottom: 1.5rem;
+  overflow: hidden;
+}
+:where(#project-custom-root), :where(#project-custom-root) *, :where(#project-custom-root) *::before, :where(#project-custom-root) *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:where(#project-custom-root) h1, :where(#project-custom-root) h2, :where(#project-custom-root) h3 {
+  font-family: var(--font-display); font-weight: 600; line-height: 1.02; letter-spacing: -0.01em;
+  text-transform: none; font-variation-settings: normal;
+}
+:where(#project-custom-root) a { color: var(--accent); text-decoration: none; }
+:where(#project-custom-root) a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:where(#project-custom-root) :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:where(#project-custom-root) .coord {
+  font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-faint);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+:where(#project-custom-root) .shell { width: min(100% - 2 * var(--gap), 1200px); margin-inline: auto; }
+:where(#project-custom-root) .ticker-viewport {
+  overflow: hidden; flex: 1 1 auto; min-width: 0; width: 100%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+  mask-image: linear-gradient(90deg, transparent, black 12px, black calc(100% - 12px), transparent);
+}
+:where(#project-custom-root) .ticker-viewport > ul { display: flex; gap: 0.4rem; width: max-content; animation: host-ticker 16s linear infinite; }
+:where(#project-custom-root) .ticker-viewport:hover > ul { animation-play-state: paused; }
+:where(#project-custom-root) .ticker-gap { flex: 0 0 2.5rem; border: 0 !important; padding: 0 !important; background: none !important; }
+@keyframes host-ticker { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  :where(#project-custom-root) .ticker-viewport > ul { animation: none; }
+}

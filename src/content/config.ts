@@ -14,6 +14,12 @@ const projects = defineCollection({
     accent: z.tuple([z.number(), z.number(), z.number()]).optional(), // OKLCH [L C H]
     featured: z.boolean().default(false),
     order: z.number().default(0),
+    // Level 3 (independent publication), merged from the project's website
+    // branch publication.json by federate.ts. All optional: Level 1/2
+    // projects simply lack them.
+    url: z.string().url().optional(),
+    category: z.enum(["software", "art", "music", "app"]).optional(),
+    visibility: z.enum(["public", "unlisted"]).optional(),
   }),
 });
 
@@ -38,6 +44,10 @@ const cv = defineCollection({
     start: z.string().optional(),
     end: z.string().optional(),
     order: z.number().default(0),
+    // skills section only: the entries in this group (title = group name)
+    items: z.array(z.string()).optional(),
+    // certifications: credential/verification link (as on LinkedIn)
+    url: z.string().url().optional(),
   }),
 });
 

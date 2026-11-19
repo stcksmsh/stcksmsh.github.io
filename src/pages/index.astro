@@ -1,382 +1,411 @@
 ---
-import Base from "../layouts/Base.astro";
-import { getCollection } from "astro:content";
-import { musicEmbedSrc } from "../lib/embeds";
-import { padForTicker } from "../lib/ticker";
+// Homepage ("board" skin).
+// The profile drawn as a printed circuit board: the KV chip's pins are the domains,
+// each project/record is a part wired to the pins it uses, contact links are the
+// board's edge-connector fingers. Same paper/ink/yellow family as the datasheet CV.
+import Profile from "../layouts/Profile.astro";
+import { identity as id, loadProfile, domains } from "../data/profile";
+import { buildBoard, type Layout, type PartInput, type Board } from "../lib/board";
 
-// Federated projects — may be empty on first run before manifest repos exist.
-let projects: any[] = [];
-try {
-  const all = await getCollection("projects");
-  projects = all
-    .map((p) => p.data)
-    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
-} catch {}
+const c = await loadProfile();
+const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
+const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
+const firstWorkYear = yearOf(c.experience.at(-1)?.start);
+const cur = c.experience[0];
 
-// Home shows a condensed teaser — full catalog lives on /music.
-const TEASER_COUNT = 6;
-let tracks: any[] = [];
-try {
-  const all = await getCollection("music");
-  tracks = all
-    .map((t) => ({ id: t.id, ...t.data }))
-    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
-    .slice(0, TEASER_COUNT);
-} catch {}
-
-// Cross-project devlog teaser — same federated data /devlog uses, condensed.
-const DEVLOG_TEASER_COUNT = 6;
-let devlogTeaser: any[] = [];
-try {
-  const projectsByslug = new Map(projects.map((p) => [p.slug, p]));
-  const allDevlogs = await getCollection("devlogs", (e: any) => !e.data.draft);
-  devlogTeaser = allDevlogs
-    .map((entry: any) => {
-      const project = projectsByslug.get(entry.data.project);
-      const anchor = entry.id.replace(/\.md$/, "").replace(/\//g, "--");
-      const excerpt = entry.body
-        .replace(/^#.*$/m, "")
-        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-        .replace(/[#*`_>]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 120);
-      return {
-        id: entry.id,
-        title: entry.data.title,
-        date: entry.data.date,
-        excerpt: excerpt.length === 120 ? excerpt + "…" : excerpt,
-        href: `/projects/${entry.data.project}#${anchor}`,
-        projectTitle: project?.title ?? entry.data.project,
-        accent: project?.accent,
-      };
-    })
-    .sort((a: any, b: any) => b.date.valueOf() - a.date.valueOf())
-    .slice(0, DEVLOG_TEASER_COUNT);
-} catch {}
-
-const nav = [
-  ["projects", "/#work"],
-  ["music", "/#sound"],
-  ["devlog", "/#devlog"],
-  ["cv", "/cv"],
+const parts: PartInput[] = [
+  ...(c.experience.length ? [{
+    id: "work", ref: "J1", kind: "conn" as const, title: "WORK", sub: `${firstWorkYear}–NOW · ${c.experience.length} REVS`, href: "#work",
+    domains: ["auto", "android"], detail: `${cur.title} — ${cur.org}`,
+  }] : []),
+  ...(c.awards.length ? [{
+    id: "results", ref: "Y1", kind: "xtal" as const, title: "OLYMPIADS", sub: "IMO · BMO · IOI", href: "#results",
+    domains: ["math"], detail: c.awards.map((a) => a.title).join(" · "),
+  }] : []),
+  ...c.education.map((e, i) => ({
+    id: `edu-${i}`, ref: `U${20 + i}`, kind: "ic" as const, title: "ETF BELGRADE", sub: "SOFTWARE ENG.", href: "#work",
+    domains: ["math", "systems"], detail: `${e.title} — ${e.org} (${range(e.start, e.end)})`,
+  })),
+  ...c.projects.map((p) => ({
+    id: `p-${p.slug}`, ref: p.ref, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
+    domains: p.domains, detail: `${p.tagline}  [${p.stack.join(" · ")}]`,
+  })),
 ];
----
-<Base title="Kosta Vukićević">
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
+const fingers = [
+  { label: "EMAIL", href: `mailto:${id.email}` },
+  { label: "LINKEDIN", href: id.linkedin },
+  { label: "GITHUB", href: id.github },
+  { label: "CV", href: "/cv" },
+];
 
-  <header class="hero">
-    <div class="hero-scrim"></div>
-    <div class="shell hero-inner">
-      <div class="hero-copy">
-        <span class="eyebrow coord">SOFTWARE / SYSTEMS / SOUND</span>
-        <h1>BUILD<br/><span class="thin">THE</span> <em>SIGNAL</em></h1>
-        <p class="lede">
-          I write <b>Kotlin for cars</b> for a living. In my own time I
-          <b>make music</b>, <b>break things on purpose</b>, and once helped
-          a couple hundred people <b>ride the bus for free</b>. Based in
-          Belgrade.
-        </p>
-        <div class="status">
-          <span>LOC: <b>BELGRADE</b></span>
-          <span>ROLE: <b>SWE · ANDROID</b></span>
-          <span>STACK: <b>KOTLIN / GO / REACT</b></span>
-          <span class="live">{projects.length} PROJECTS ACTIVE</span>
-        </div>
-      </div>
-    </div>
+const wide: Layout = {
+  // 11 slots: 3 records (work, olympiads, ETF) + up to 8 featured projects.
+  w: 1600, h: 1290,
+  chip: { x: 800, y: 560, w: 350, h: 300 },
+  slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }, { x: 250, y: 1030 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }, { x: 1350, y: 1010 }], b: [{ x: 470, y: 1170 }, { x: 1130, y: 1170 }] },
+  part: { w: 232, h: 96 },
+  lanes: { l: [570, 390], r: [1030, 1210] },
+  bottomLaneY: [790, 880],
+  fingers: { y: 1225, x0: 580, x1: 1020, h: 45, wire: true },
+};
+const narrow: Layout = {
+  w: 420, h: 330 + Math.ceil(parts.length / 2) * 150 + 140,
+  chip: { x: 210, y: 150, w: 250, h: 220 },
+  slots: { l: [], r: [], b: parts.map((_, i) => ({ x: i % 2 ? 300 : 120, y: 390 + Math.floor(i / 2) * 150 })) },
+  part: { w: 154, h: 84 },
+  lanes: { l: [38, 14], r: [382, 406] },
+  maxPads: 1,
+  bottomLaneY: [0, 0],
+  fingers: { y: 330 + Math.ceil(parts.length / 2) * 150 + 70, x0: 20, x1: 400, h: 50, wire: false },
+  mode: "stack",
+};
+const boards: [string, Board][] = [["wide", buildBoard(wide, domains, parts, fingers)], ["narrow", buildBoard(narrow, domains, parts, fingers)]];
+const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
+---
+<Profile title={id.name} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <div class="maker"><span class="logo" aria-hidden="true">KV</span><span>{id.location}</span></div>
+    <nav aria-label="Primary" class="mono">
+      <a href="#work">Work</a>
+      <a href="#selected">Projects</a>
+      <a href="/cv" class="hl">CV</a>
+      <a href={`mailto:${id.email}`} class="hl">Contact</a>
+    </nav>
   </header>
 
-  <section class="shell" id="work" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">01 / PROJECTS</span>
-      <h2><a href="/projects">Selected builds <span class="arrow">→</span></a></h2>
-    </div>
+  <main id="main">
+    <section class="stage" aria-labelledby="name">
+      <div class="silk">
+        <p class="eyebrow mono">REV {String.fromCharCode(64 + c.experience.length)} · {id.location.toUpperCase()}</p>
+        <h1 id="name" aria-label={id.name}>{id.name.split(" ").map((w, wi) => (
+          <span class="word" aria-hidden="true">{[...w].map((ch, ci) => <span class="ch" style={`--d:${wi * 6 + ci}`}>{ch}</span>)}</span>
+        ))}</h1>
+        <p class="role">{id.role} · {id.employer}</p>
+        <p class="intro">{id.intro.join(" ")}</p>
+      </div>
 
-    {projects.length === 0 ? (
-      <p class="empty coord">
-        // no federated projects yet — push an <code>io-page</code> branch
-        with a <code>meta.json</code> to any repo in the manifest
-      </p>
-    ) : (
-      <ul class="carousel cards">
-        {projects.map((p) => (
-          <li
-            class="card"
-            style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
-          >
-            <a href={`/projects/${p.slug}`}>
-              <span class="card-status coord">{p.status}</span>
-              <h3>{p.title}</h3>
-              <p class="card-tag">{p.tagline}</p>
-              <div class="ticker-viewport" aria-hidden="true">
-                <ul class="stack">
-                  {[...padForTicker(p.stack.slice(0, 4)), ...padForTicker(p.stack.slice(0, 4))].map((s: string | null) =>
-                    s === null ? <li class="ticker-gap" /> : <li>{s}</li>
-                  )}
-                </ul>
-              </div>
+      <div class="probe mono" aria-live="polite">
+        <span class="probe-h">PROBE</span>
+        <b class="probe-t">Hover or tab to a part.</b>
+        <span class="probe-d">Every part on this board is wired to the domains it uses. Click one to open it.</span>
+      </div>
+
+      {boards.map(([key, b]) => (
+        <svg class={`board ${key}`} viewBox={`0 0 ${b.w} ${b.h}`} role="group" aria-label="Circuit board: parts are projects and records, wired to the domains they use">
+          <defs>
+            <pattern id={`grid-${key}`} width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" class="dot" /></pattern>
+          </defs>
+          <rect class="pcb" x="6" y="6" width={b.w - 12} height={b.h - 12} rx="26" />
+          <rect x="6" y="6" width={b.w - 12} height={b.h - 12} rx="26" fill={`url(#grid-${key})`} />
+          {[[40, 40], [b.w - 40, 40], ...(key === "wide" ? [[40, b.h - 40], [b.w - 40, b.h - 40]] : [])].map(([x, y]) => <g class="hole" aria-hidden="true"><circle cx={x} cy={y} r="13" /><circle cx={x} cy={y} r="6" /></g>)}
+
+          <g class="traces" aria-hidden="true">
+            {b.traces.map((t, i) => (
+              <g class="trace" data-net={t.net} data-part={t.part}>
+                <path class="hit" d={t.d} />
+                <path class="cu" d={t.d} pathLength="1" style={`--i:${i}`} />
+                {t.vias.map(([x, y]) => <circle class="via" cx={x} cy={y} r="5" />)}
+                <circle class="pulse" r={key === "wide" ? 4.5 : 3.5}>
+                  <animateMotion dur={`${2.6 + (i % 5) * 0.45}s`} begin={`${(i * 0.37) % 3}s`} repeatCount="indefinite" path={t.d} />
+                </circle>
+              </g>
+            ))}
+            {b.fingers.map((f, i) => (
+              <g class="trace" data-net="io"><path class="cu" d={f.d} pathLength="1" style={`--i:${b.traces.length + i}`} />
+                <circle class="pulse" r="4"><animateMotion dur="3.2s" begin={`${i * 0.8}s`} repeatCount="indefinite" path={f.d} /></circle></g>
+            ))}
+          </g>
+
+          <g class="chip" aria-hidden="true">
+            <rect x={b.chip.x - b.chip.w / 2} y={b.chip.y - b.chip.h / 2} width={b.chip.w} height={b.chip.h} rx="6" />
+            <circle class="pin1" cx={b.chip.x - b.chip.w / 2 + 18} cy={b.chip.y - b.chip.h / 2 + 18} r="6" />
+            <text class="chip-kv" x={b.chip.x} y={b.chip.y + (key === "wide" ? 14 : 10)}>KV</text>
+            <text class="chip-sub" x={b.chip.x} y={b.chip.y + (key === "wide" ? 40 : 30)}>SWE-II</text>
+          </g>
+
+          <g class="pins">
+            {b.pins.map((p, i) => {
+              const pw = key === "wide" ? 104 : 88, ph = key === "wide" ? 30 : 24, gap = key === "wide" ? 12 : 8;
+              const bx = p.side === "l" ? p.x + gap : p.x - gap - pw;
+              const num = p.side === "l" ? i + 1 : 8 - (i - 4);
+              const n = b.parts.filter((q) => q.domains.includes(p.id)).length;
+              return (
+                <g class="pin" data-net={p.id} tabindex="0" role="button" aria-label={`Net ${p.label}: ${n} part${n === 1 ? "" : "s"}`}>
+                  <line class="leg" x1={p.x} x2={p.side === "l" ? p.x - 14 : p.x + 14} y1={p.y} y2={p.y} />
+                  <line class="bond" x1={p.x} x2={p.side === "l" ? bx : bx + pw} y1={p.y} y2={p.y} />
+                  <rect class="pad-box" x={bx} y={p.y - ph / 2} width={pw} height={ph} rx="3" />
+                  <text class="pin-no" x={p.side === "l" ? bx + 7 : bx + pw - 7} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{num}</text>
+                  <text class="pin-lbl" x={p.side === "l" ? bx + (key === "wide" ? 24 : 20) : bx + pw - (key === "wide" ? 24 : 20)} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{p.label}</text>
+                </g>
+              );
+            })}
+          </g>
+
+          {b.parts.map((p) => (
+            <a class={`part ${p.kind}`} href={p.href} data-part={p.id} data-nets={p.domains.join(" ")} aria-label={`${p.ref} ${partBy[p.id].title}: ${p.detail}`}>
+              <rect class="body" x={p.x - p.w / 2} y={p.y - p.h / 2} width={p.w} height={p.h} rx={p.kind === "xtal" ? p.h / 2 : 4} />
+              {p.pads.map((pad) => <rect class="pad" x={pad.x - 7} y={pad.y - 7} width="14" height="14" />)}
+              {p.kind === "conn" && [0, 1, 2, 3].map((k) => <circle class="hdr" cx={p.x - p.w / 2 + 30 + k * ((p.w - 60) / 3)} cy={p.y + p.h / 2 - (key === "wide" ? 16 : 10)} r={key === "wide" ? 6 : 4} />)}
+              <text class="ref" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y - p.h / 2 + 20}>{p.ref}</text>
+              <text class="ttl" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y + (p.kind === "conn" ? 0 : 6)}>{p.title}</text>
+              <text class="sub" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y + (p.kind === "conn" ? 15 : 28)}>{p.sub}</text>
             </a>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
+          ))}
 
-  <section class="shell" id="sound" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">02 / SOUND</span>
-      <h2><a href="/music">Selected sounds <span class="arrow">→</span></a></h2>
-    </div>
-
-    {tracks.length === 0 ? (
-      <p class="empty coord">
-        // no tracks yet — add entries to <code>src/content/music/*.json</code>
-      </p>
-    ) : (
-      <ul class="carousel tracks">
-        {tracks.map((t) => (
-          <li
-            class="track"
-            style={t.accent ? `--accent-l:${t.accent[0]};--accent-c:${t.accent[1]};--accent-h:${t.accent[2]};` : ""}
-          >
-            <div class="track-meta coord">
-              <span>{t.source}</span>
-              {t.year && <span>{t.year}</span>}
-            </div>
-            <h3>{t.title}</h3>
-            {t.source === "soundcloud" ? (
-              <button
-                type="button"
-                class="track-play"
-                data-track={JSON.stringify({
-                  slug: t.id, title: t.title, embedId: t.embedId, accent: t.accent, envelope: t.envelope,
-                })}
-              >
-                <span class="track-play-icon">▶</span>
-                <span>Play{t.envelope ? " — reactive" : ""}</span>
-              </button>
-            ) : (
-              <div class="track-embed">
-                <iframe
-                  loading="lazy"
-                  width="100%"
-                  height="300"
-                  seamless
-                  title={t.title}
-                  src={musicEmbedSrc(t)}
-                />
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
-
-  <section class="shell" id="devlog" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">03 / DEVLOG</span>
-      <h2><a href="/devlog">What's shipping <span class="arrow">→</span></a></h2>
-    </div>
-
-    {devlogTeaser.length === 0 ? (
-      <p class="empty coord">// no devlog entries yet</p>
-    ) : (
-      <ul class="carousel devlog-teaser">
-        {devlogTeaser.map((e) => (
-          <li
-            class="dt-entry"
-            style={e.accent ? `--accent-l:${e.accent[0]};--accent-c:${e.accent[1]};--accent-h:${e.accent[2]};` : ""}
-          >
-            <a href={e.href}>
-              <div class="dt-meta coord">
-                <span>{e.projectTitle}</span>
-                <time datetime={e.date.toISOString()}>{e.date.toISOString().slice(0, 10)}</time>
-              </div>
-              <h3>{e.title}</h3>
-              <p class="dt-excerpt">{e.excerpt}</p>
+          {b.fingers.map((f) => (
+            <a class="finger" href={f.href} aria-label={f.label === "CV" ? "CV (printable)" : f.label === "EMAIL" ? `Email ${id.email}` : f.label}>
+              <rect x={f.x} y={f.y} width={f.w} height={f.h} rx="3" />
+              <text x={f.x + f.w / 2} y={f.y + f.h / 2 + 5}>{f.label}</text>
             </a>
-          </li>
-        ))}
-      </ul>
+          ))}
+          {key === "wide" && <text class="silk-note" x={b.w - 70} y={b.h - 64} text-anchor="end" aria-hidden="true">KV-SWE-II · MADE IN BELGRADE</text>}
+        </svg>
+      ))}
+    </section>
+
+    <section class="sheet" aria-label="Profile">
+      <div class="block" id="work">
+        <h2><span class="n mono">1</span>Work</h2>
+        <ol class="rows">
+          {c.experience.map((e, i) => (
+            <li class={i === 0 ? "cur" : ""}><span class="mono when">{range(e.start, e.end)}</span><span><b>{e.title}</b><br /><span class="org">{e.org}</span></span></li>
+          ))}
+        </ol>
+        <a class="more mono" href="/cv">Full CV with details →</a>
+      </div>
+      <div class="block" id="results">
+        <h2><span class="n mono">2</span>Education &amp; results</h2>
+        <ol class="rows">
+          {c.education.map((e) => <li><span class="mono when">{range(e.start, e.end)}</span><span><b>{e.title}</b><br /><span class="org">{e.org}</span></span></li>)}
+          {c.awards.map((a) => <li><span class="mono when">{a.start}</span><span><b>{a.title}</b></span></li>)}
+        </ol>
+      </div>
+      <div class="block">
+        <h2><span class="n mono">3</span>Skills</h2>
+        <dl class="spec">{c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.join(" · ")}</dd></>)}</dl>
+      </div>
+    </section>
+
+    {c.projects.length > 0 && (
+      <section class="sheet one" id="selected" aria-labelledby="sel-h">
+        <div class="block">
+          <h2 id="sel-h"><span class="n mono">4</span>Selected work</h2>
+          <ol class="apps">
+            {c.projects.map((p, i) => (
+              <li data-part={`p-${p.slug}`}><span class="mono an">U{i + 2}</span><a href={p.url ?? `/projects/${p.slug}`}><b>{p.title}</b></a><span class="tag">{p.tagline}</span><span class="mono st">{p.stack.join(" · ")}</span></li>
+            ))}
+          </ol>
+        </div>
+      </section>
     )}
-  </section>
-</Base>
-
-<style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
-
-  /* canvas.sinteza-bg itself is styled in global.css — it's mounted once,
-     site-wide, in Base.astro now, not scoped to this page. The hero here
-     only adds its own local scrim for headline legibility. */
-  .hero {
-    position: relative;
-    min-height: 82vh;
-    display: flex;
-    align-items: center;
-  }
-  .hero-scrim {
-    position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    /* Strong, wide coverage across the whole text column (headline runs
-       to ~50% width at the hero's max font size) fading out well past it,
-       so the beam/blob still dominate the right side of the viewport
-       without crossing directly through the letterforms. */
-    background: linear-gradient(90deg,
-      color-mix(in oklch, var(--bg) 97%, transparent) 0%,
-      color-mix(in oklch, var(--bg) 94%, transparent) 48%,
-      color-mix(in oklch, var(--bg) 65%, transparent) 65%,
-      transparent 86%);
-    /* Feather top/bottom so the scrim fades into the next section's bare
-       artwork instead of ending on a flat opaque band that seams against
-       it (same treatment as .project-hero-scrim). */
-    mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
-  }
-  .hero-inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2rem, 6vw, 4rem); }
-  .hero-copy { margin-top: 0; }
-  .eyebrow {
-    display: flex; align-items: center; flex-wrap: wrap; row-gap: 0.4rem; gap: 0.9rem;
-    color: var(--accent); letter-spacing: 0.22em; margin-bottom: 1.4rem;
-  }
-  .eyebrow::before { content: ""; width: 2.2rem; height: 2px; background: var(--accent); flex-shrink: 0; }
-  .hero-copy h1 {
-    font-size: var(--hero); line-height: 0.92; letter-spacing: -0.02em;
-    text-transform: uppercase; margin: 0.5rem 0 1.5rem;
-  }
-  .hero-copy h1 .thin { font-weight: 400; color: var(--ink-dim); }
-  .hero-copy h1 em { font-style: normal; color: var(--accent); }
-  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); margin-bottom: 1.6rem; }
-  .lede b { color: var(--ink); font-weight: 500; }
-
-  .status {
-    display: flex; flex-wrap: wrap; gap: 0; border: var(--border);
-    border-radius: var(--radius-panel); overflow: hidden;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    font-family: var(--font-mono); font-size: var(--step--1); width: fit-content; max-width: 100%;
-  }
-  .status span { padding: 0.6rem 1rem; border-right: var(--border); color: var(--ink-dim); letter-spacing: 0.06em; white-space: nowrap; }
-  .status span:last-child { border-right: 0; }
-  .status span b { color: var(--accent); font-weight: 500; }
-  .status .live { color: var(--accent-cyan); }
-  .status .live::before { content: "● "; }
-
-  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
-  .section-head h2 { font-size: var(--step-2); }
-  .section-head h2 a { color: var(--ink); text-decoration: none; }
-  .section-head h2 a:hover { color: var(--accent); }
-  .section-head h2 .arrow { color: var(--accent); }
-
-  /* Horizontal scroll-snap carousel — shared shape for projects/music/devlog.
-     Each section's own class (.cards/.tracks/.devlog-teaser) sets item width. */
-  .carousel {
-    display: flex; gap: var(--gap); list-style: none;
-    overflow-x: auto; scroll-snap-type: x mandatory;
-    padding-bottom: 0.75rem; margin: 0 calc(var(--gap) * -1);
-    padding-inline: var(--gap);
-    scrollbar-width: thin; scrollbar-color: var(--hairline) transparent;
-  }
-  .carousel > li { scroll-snap-align: start; flex-shrink: 0; }
-
-  .cards > li { width: min(320px, 85vw); }
-  .card {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
-  }
-  .card:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
-  .card a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
-  .card a:hover { text-decoration: none; }
-  .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
-  .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
-  .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
-  /* Ticker scroll mechanics live in global.css; this just keeps the pill look. */
-  .stack { list-style: none; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
-
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
-  .empty code { color: var(--accent); }
-
-  .tracks > li { width: min(280px, 85vw); }
-  .track {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    padding: 1.5rem;
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
-  }
-  .track:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
-  .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
-  .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
-  .track-embed { border-radius: var(--radius); overflow: hidden; }
-  .track-embed iframe { display: block; border: 0; }
-  .track-play {
-    display: flex; align-items: center; gap: 0.6rem; width: 100%;
-    background: none; border: var(--border); border-radius: var(--radius);
-    color: var(--ink); font-family: var(--font-mono); font-size: var(--step--1);
-    padding: 0.7rem 1rem; cursor: pointer; letter-spacing: 0.04em;
-    transition: border-color 0.15s var(--ease-scope), color 0.15s var(--ease-scope);
-  }
-  .track-play:hover { border-color: var(--accent); color: var(--accent); }
-  .track-play-icon { color: var(--accent); }
-
-  .devlog-teaser > li { width: min(300px, 85vw); }
-  .dt-entry {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
-  }
-  .dt-entry:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
-  .dt-entry a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
-  .dt-entry a:hover { text-decoration: none; }
-  .dt-meta { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--accent); margin-bottom: 0.6rem; }
-  .dt-entry h3 { font-size: var(--step-0); margin-bottom: 0.5rem; }
-  .dt-excerpt { color: var(--ink-dim); font-size: var(--step--1); }
-</style>
+  </main>
+  <footer class="foot mono"><span>{id.name} · <a href={`mailto:${id.email}`}>{id.email}</a> · <a href={id.linkedin}>LinkedIn</a> · <a href={id.github}>GitHub</a> · <a href="/cv">CV</a></span><span><a href="/projects">All projects</a> · <a href="/devlog">Devlog</a> · <a href="/music">Music</a></span></footer>
+</Profile>
 
 <script>
-  import { requestPlay } from "../lib/player-bus";
-  // View Transitions re-run page scripts on every client-side navigation —
-  // guard against stacking duplicate listeners on repeat visits home.
-  if (!(window as any).__trackPlayBound) {
-    (window as any).__trackPlayBound = true;
-    document.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest(".track-play");
-      if (!btn) return;
-      const data = JSON.parse(btn.getAttribute("data-track")!);
-      requestPlay(data);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) document.querySelectorAll<SVGSVGElement>("svg.board").forEach((s) => s.pauseAnimations());
+
+  // Name letters widen toward the pointer (Archivo's width axis).
+  const stage = document.querySelector<HTMLElement>(".stage");
+  const chars = [...document.querySelectorAll<HTMLElement>("#name .ch")];
+  if (stage && !reduce && matchMedia("(pointer: fine)").matches) {
+    let centers: { x: number; y: number }[] = [];
+    let frame = 0;
+    const measure = () => { centers = chars.map((c) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }); };
+    addEventListener("scroll", () => (centers = []), { passive: true });
+    addEventListener("resize", () => (centers = []));
+    stage.addEventListener("pointermove", (ev) => {
+      if (!centers.length) measure();
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => chars.forEach((c, i) => {
+        const d = Math.hypot(ev.clientX - centers[i].x, ev.clientY - centers[i].y);
+        c.style.setProperty("--w", String(62 + 58 * Math.max(0, 1 - d / 300) ** 1.5));
+      }));
     });
+    stage.addEventListener("pointerleave", () => chars.forEach((c) => c.style.removeProperty("--w")));
   }
+
+  // Probe: hovering/focusing a part lights its nets; hovering a trace names its net.
+  const probeT = document.querySelector<HTMLElement>(".probe-t")!;
+  const probeD = document.querySelector<HTMLElement>(".probe-d")!;
+  const idleT = probeT.textContent, idleD = probeD.textContent;
+  const labels: Record<string, string> = Object.fromEntries([...document.querySelectorAll<SVGGElement>(".pin")].map((p) => [p.dataset.net!, p.querySelector(".pin-lbl")!.textContent!.trim()]));
+  const clear = () => {
+    document.querySelectorAll(".on, .off").forEach((el) => el.classList.remove("on", "off"));
+    document.body.classList.remove("probing");
+    probeT.textContent = idleT; probeD.textContent = idleD;
+  };
+  const light = (match: (el: HTMLElement | SVGElement) => boolean) => {
+    document.body.classList.add("probing");
+    document.querySelectorAll<SVGElement>(".trace, .pin, .part").forEach((el) => {
+      const on = match(el);
+      el.classList.toggle("on", on); el.classList.toggle("off", !on);
+    });
+  };
+  document.querySelectorAll<SVGAElement>(".part").forEach((part) => {
+    const show = () => {
+      const nets = part.dataset.nets!.split(" ");
+      light((el) => el === part || (el as SVGElement).dataset.part === part.dataset.part || (el.classList.contains("pin") && nets.includes((el as SVGElement).dataset.net!)));
+      const [head, ...rest] = part.getAttribute("aria-label")!.split(": ");
+      probeT.textContent = head;
+      probeD.textContent = `${rest.join(": ")}  ⟶ nets: ${nets.map((n) => labels[n] ?? n).join(", ")}`;
+    };
+    part.addEventListener("pointerenter", show);
+    part.addEventListener("focus", show);
+    part.addEventListener("pointerleave", clear);
+    part.addEventListener("blur", clear);
+  });
+  // A net (one chip pin + its traces + the parts on it) lights from the pin pad or any of its traces.
+  const showNet = (net: string) => {
+    light((el) => (el as SVGElement).dataset.net === net || ((el as SVGElement).classList.contains("part") && (el as SVGElement).dataset.nets!.split(" ").includes(net)));
+    const names = [...new Set([...document.querySelectorAll<SVGAElement>("svg.board:not([hidden]) .part.on")].filter((p) => p.getClientRects().length).map((p) => p.getAttribute("aria-label")!.split(":")[0].replace(/^\S+\s/, "")))];
+    probeT.textContent = `NET ${labels[net] ?? net}`;
+    probeD.textContent = names.length ? `On this net: ${names.join(", ")}` : "Nothing on this net yet.";
+  };
+  document.querySelectorAll<SVGGElement>(".trace[data-part], .pin").forEach((t) => {
+    t.addEventListener("pointerenter", () => showNet(t.dataset.net!));
+    t.addEventListener("pointerleave", clear);
+  });
+  document.querySelectorAll<SVGGElement>(".pin").forEach((p) => {
+    p.addEventListener("focus", () => showNet(p.dataset.net!));
+    p.addEventListener("blur", clear);
+  });
 </script>
+
+<style is:global>
+  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --hi: #ffd400; --blue: #0b4fb3; --pcb: #f6f4ec; --dotc: #d9d5c6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; }
+  a { color: var(--blue); }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .skip { position: absolute; left: -999px; } .skip:focus { left: 16px; top: 8px; background: var(--ink); color: #fff; padding: 6px 10px; z-index: 9; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px clamp(16px, 3vw, 32px); background: var(--paper); border-bottom: 2px solid var(--ink); position: sticky; top: 0; z-index: 5; }
+  .maker { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; font-variation-settings: "wdth" 125; }
+  .top nav { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; }
+  .top nav a { color: var(--ink); text-decoration: none; }
+  .top nav a.hl { background: var(--hi); padding: 2px 8px; font-weight: 600; }
+
+  /* Board stage */
+  .stage { position: relative; max-width: 1600px; margin: clamp(0px, 2vw, 28px) auto 0; padding: 0 clamp(0px, 2vw, 28px); container-type: inline-size; }
+  .board { display: block; width: 100%; height: auto; }
+  .board.narrow { display: none; }
+  .pcb { fill: var(--pcb); stroke: var(--ink); stroke-width: 3; }
+  .dot { fill: var(--dotc); }
+  .hole circle:first-child { fill: none; stroke: var(--ink); stroke-width: 2; } .hole circle:last-child { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+  .silk-note { font: 600 13px "JetBrains Mono", monospace; fill: var(--dim); letter-spacing: .1em; }
+
+  .silk { position: absolute; left: calc(clamp(0px, 2vw, 28px) + 4.4cqw); top: 3.4cqw; width: 46cqw; pointer-events: none; z-index: 2; }
+  .silk a, .silk h1 { pointer-events: auto; }
+  .eyebrow { font-size: max(11px, .8cqw); letter-spacing: .14em; color: var(--dim); margin: 0 0 .4cqw; }
+  h1 { font-size: 7.6cqw; line-height: .9; font-weight: 900; text-transform: uppercase; margin: 0; }
+  .word { display: block; white-space: nowrap; }
+  .ch { display: inline-block; font-variation-settings: "wdth" var(--w, 62); transition: font-variation-settings .35s cubic-bezier(.2,.8,.2,1); animation: settle .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--d) * 45ms); }
+  @keyframes settle { from { font-variation-settings: "wdth" 125; opacity: 0; } }
+  .role { font-weight: 700; font-variation-settings: "wdth" 85; font-size: max(15px, 1.35cqw); margin: .9cqw 0 0; }
+  .intro { font-size: max(14px, 1.05cqw); max-width: min(34em, 33cqw); margin: .6cqw 0 0; color: #333; }
+
+  .probe { position: absolute; right: calc(clamp(0px, 2vw, 28px) + 4cqw); top: 3.4cqw; width: 30cqw; z-index: 2; background: var(--ink); color: #eee; padding: 10px 14px; font-size: max(11px, .8cqw); display: grid; gap: 4px; box-shadow: 6px 6px 0 var(--hi); }
+  .probe-h { color: var(--hi); letter-spacing: .14em; font-weight: 700; }
+  .probe-t { color: #fff; font-size: 1.15em; }
+  .probe-d { color: #bbb; min-height: 3em; }
+
+  .cu { fill: none; stroke: #2a2a2a; stroke-width: 2.6; stroke-linejoin: round; stroke-dasharray: 1; animation: draw 1.4s cubic-bezier(.6,0,.2,1) backwards; animation-delay: calc(.4s + var(--i) * 45ms); transition: stroke .2s, opacity .2s, stroke-width .2s; }
+  @keyframes draw { from { stroke-dashoffset: 1; } }
+  .hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; }
+  .via { fill: var(--pcb); stroke: var(--ink); stroke-width: 2.5; }
+  .pulse { fill: var(--hi); stroke: var(--ink); stroke-width: 1.5; }
+
+  .chip rect { fill: var(--ink); }
+  .pin1 { fill: #444; }
+  .chip-kv { font: 900 52px "Archivo", sans-serif; font-variation-settings: "wdth" 125; fill: var(--hi); text-anchor: middle; }
+  .chip-sub { font: 600 15px "JetBrains Mono", monospace; fill: #bbb; text-anchor: middle; letter-spacing: .1em; }
+  .narrow .chip-kv { font-size: 30px; } .narrow .chip-sub { font-size: 11px; }
+  .pin { cursor: crosshair; }
+  .pin .leg { stroke: var(--ink); stroke-width: 6; }
+  .pin .bond { stroke: #777; stroke-width: 1.5; }
+  .pin .pad-box { fill: #222; stroke: #555; stroke-width: 1.5; transition: fill .2s, stroke .2s; }
+  .pin .pin-no { font: 600 10px "JetBrains Mono", monospace; fill: #888; }
+  .pin .pin-lbl { font: 700 13px "JetBrains Mono", monospace; fill: #eee; letter-spacing: .04em; }
+  .narrow .pin .pin-lbl { font-size: 10.5px; } .narrow .pin .pin-no { font-size: 9px; }
+  .pin:hover .pad-box, .pin:focus .pad-box { fill: var(--hi); stroke: var(--hi); }
+  .pin:hover .pin-lbl, .pin:focus .pin-lbl, .pin:hover .pin-no, .pin:focus .pin-no { fill: var(--ink); }
+  .pin:focus { outline: none; } .pin:focus-visible .pad-box { stroke: var(--blue); stroke-width: 4; }
+
+  .part { cursor: pointer; }
+  .part .body { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; transition: fill .2s; }
+  .part.xtal .body { fill: #fff8d1; }
+  .part .pad { fill: var(--hi); stroke: var(--ink); stroke-width: 2; }
+  .part .hdr { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+  .part .ref { font: 600 12px "JetBrains Mono", monospace; fill: var(--dim); }
+  .part .ttl { font: 900 22px "Archivo", sans-serif; font-variation-settings: "wdth" 75; fill: var(--ink); }
+  .part .sub { font: 500 11px "JetBrains Mono", monospace; fill: var(--dim); letter-spacing: .06em; }
+  .narrow .part .ttl { font-size: 15px; font-variation-settings: "wdth" 62; } .narrow .part .ref, .narrow .part .sub { font-size: 10px; }
+  .part:hover .body, .part:focus .body, .part.on .body { fill: var(--hi); }
+  .part:focus { outline: none; } .part:focus-visible .body { stroke: var(--blue); stroke-width: 5; }
+
+  .finger rect { fill: #e8c25a; stroke: var(--ink); stroke-width: 2; transition: fill .2s; }
+  .finger text { font: 700 13px "JetBrains Mono", monospace; text-anchor: middle; fill: var(--ink); }
+  .narrow .finger text { font-size: 11.5px; }
+  .finger:hover rect, .finger:focus rect { fill: var(--hi); }
+  .finger:focus { outline: none; } .finger:focus-visible rect { stroke: var(--blue); stroke-width: 5; }
+
+  .probing .trace.off, .probing .part.off { opacity: .22; }
+  .probing .pin.off { opacity: .35; }
+  .trace.on .cu { stroke: var(--blue); stroke-width: 4.5; }
+  .pin.on .leg, .pin.on .bond { stroke: var(--blue); } .pin.on .pad-box { fill: var(--hi); stroke: var(--blue); } .pin.on .pin-lbl, .pin.on .pin-no { fill: var(--ink); }
+
+  /* Structured profile under the board */
+  .sheet { width: min(1544px, 100% - 2 * clamp(16px, 2vw, 28px)); margin: 28px auto 0; background: var(--paper); border: 2px solid var(--ink); display: grid; grid-template-columns: 1.1fr 1fr 1fr; }
+  .sheet.one { grid-template-columns: 1fr; }
+  .sheet .block + .block { border-left: 2px solid var(--ink); }
+  .block { padding: 22px clamp(16px, 2.5vw, 28px); }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 14px; display: flex; gap: 10px; align-items: baseline; }
+  .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li { display: grid; grid-template-columns: 12.5em 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid #ccc; }
+  .rows li.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
+  .when { font-size: 12px; padding-top: 2px; }
+  .org { color: var(--dim); }
+  .more { display: inline-block; margin-top: 12px; font-size: 13px; }
+  .spec { display: grid; grid-template-columns: 9.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec dt { font-weight: 700; } .spec dd { margin: 0; }
+  .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 28px; }
+  .apps li { display: grid; grid-template-columns: 3em 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid #ccc; }
+  .an { grid-row: span 3; font-size: 12px; color: var(--dim); padding-top: 3px; }
+  .apps a { color: var(--ink); font-size: 18px; } .apps a:hover { color: var(--blue); }
+  .tag { font-size: 15px; } .st { font-size: 11px; color: var(--dim); }
+  .foot { width: min(1544px, 100% - 2 * clamp(16px, 2vw, 28px)); margin: 0 auto 32px; display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; padding: 12px 0; font-size: 12px; color: var(--dim); }
+
+  @media (max-width: 1100px) {
+    .sheet { grid-template-columns: 1fr; }
+    .sheet .block + .block { border-left: 0; border-top: 2px solid var(--ink); }
+    .apps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 1100px) {
+    .board.wide { display: none; } .board.narrow { display: block; }
+    .stage { padding: 0 8px; max-width: 640px; }
+    .silk { position: static; width: auto; padding: 22px 8px 16px; }
+    h1 { font-size: 17cqw; }
+    .role { font-size: 16px; margin-top: 10px; } .intro { font-size: 15px; margin-top: 6px; max-width: 34em; }
+    .eyebrow { font-size: 11px; }
+    .probe { display: none; }
+  }
+  @media (max-width: 760px) {
+    .top nav a:not(.hl) { display: none; }
+    .rows li { grid-template-columns: 1fr; gap: 0; }
+    .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 8px; }
+    .apps { grid-template-columns: 1fr; }
+    .sheet { width: calc(100% - 16px); margin-top: 16px; }
+    .maker span:last-child { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .pulse { display: none; }
+  }
+</style>

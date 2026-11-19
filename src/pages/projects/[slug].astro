@@ -1,163 +1,137 @@
 ---
+// Part datasheet: one federated project. Datasheet family on the Profile layout
+// (no visualizer, no player). Sections: spec table, the project's own custom hero
+// if it ships one (io-page page/ bundle, see AGENTS.md), and its build log.
 import { getCollection, render } from "astro:content";
-import Base from "../../layouts/Base.astro";
-import { padForTicker } from "../../lib/ticker";
+import Profile from "../../layouts/Profile.astro";
+import { identity as id, loadParts, domains } from "../../data/profile";
+import { isListed } from "../../lib/listing";
+import "../../styles/catalogue.css";
+import "../../styles/custom-page-host.css";
 
 export async function getStaticPaths() {
-  const projects = await getCollection("projects");
-  return projects.map((p) => ({
-    params: { slug: p.data.slug },
-    props: { project: p.data },
-  }));
+  const parts = await loadParts();
+  const listed = parts.filter(isListed);
+  return parts.map((p) => {
+    const i = listed.indexOf(p);
+    return {
+      params: { slug: p.slug },
+      props: { part: p, prev: i > 0 ? listed[i - 1] : undefined, next: i >= 0 ? listed[i + 1] : undefined },
+    };
+  });
 }
 
-const { project } = Astro.props;
+const { part: p, prev, next } = Astro.props;
 
-const allDevlogs = await getCollection(
-  "devlogs",
-  (entry) => entry.data.project === project.slug && !entry.data.draft
+const devlogs = (await getCollection("devlogs", (e) => e.data.project === p.slug && !e.data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
-const devlogs = allDevlogs.sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-);
+const rendered = await Promise.all(devlogs.map(async (entry) => ({ entry, Content: (await render(entry)).Content })));
 
-const rendered = await Promise.all(
-  devlogs.map(async (entry) => {
-    const { Content } = await render(entry);
-    return { entry, Content };
-  })
-);
-
-// Projects can ship a full custom hero instead of the standard one below —
-// see AGENTS.md's "custom project pages" section for the io-page page/
-// bundle contract. federate.ts mirrors a project's page/ bundle (if any)
-// into src/generated/projects/<slug>/. Only the hero is replaceable: the
-// devlog stream further down always stays the site's own generic,
-// server-rendered section, for every project — a custom page owns its own
-// narrative/interactive content, not the devlog archive.
-//
-// A component picked up this way can't go through Astro's client:*
-// directives (they require a static import in this file's own frontmatter
-// to generate a hydration entry — a glob-derived reference doesn't
-// qualify, fails at build with "NoMatchingImport"), so it's mounted by
-// hand in a plain <script> below instead — lazily, so only the current
-// page's custom entry ever ships.
-interface DevlogSummary { id: string; title: string; date: string; tags: string[] }
-
+// Custom hero: mounted by hand below. Astro's client:* directives need a static
+// import, and a glob-derived component doesn't qualify ([NoMatchingImport]).
 const customPageLoaders = import.meta.glob("../../generated/projects/*/entry.tsx");
-const hasCustomPage = `../../generated/projects/${project.slug}/entry.tsx` in customPageLoaders;
+const hasCustomPage = `../../generated/projects/${p.slug}/entry.tsx` in customPageLoaders;
+const devlogSummaries = devlogs.map((e) => ({ id: e.id, title: e.data.title, date: e.data.date.toISOString(), tags: e.data.tags }));
+const { ref, domains: _d, logs: _l, lastLog: _ll, ...project } = p; // the contract's `project` mirrors meta.json
+const accentStyle = p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : "";
 
-const devlogSummaries: DevlogSummary[] = devlogs.map((entry) => ({
-  id: entry.id,
-  title: entry.data.title,
-  date: entry.data.date.toISOString(),
-  tags: entry.data.tags,
-}));
-
-const nav = [
-  ["projects", "/projects"],
-  ["music", "/music"],
-  ["devlog", "/devlog"],
-  ["cv", "/cv"],
-];
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const anchor = (entryId: string) => entryId.replace(/\.md$/, "").replace(/\//g, "--");
+const pinLabels = p.domains.map((d) => domains.find((x) => x.id === d)?.label).filter(Boolean);
+const host = (u: string) => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
+let n = 1;
+const fonts = `https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700${hasCustomPage ? "&family=Chakra+Petch:wght@400;500;600;700" : ""}&display=swap`;
 ---
-<Base title={project.title} description={project.tagline} accent={project.accent}>
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
-
-  {hasCustomPage ? (
-    <div
-      id="project-custom-root"
-      data-slug={project.slug}
-      data-project={JSON.stringify(project)}
-      data-devlogs={JSON.stringify(devlogSummaries)}
-    />
-  ) : (
-    <header class="project-hero">
-      <div class="project-hero-scrim"></div>
-      <div class="shell project-hero-inner">
-        <span class="coord">{project.status}</span>
-        <h1>{project.title}</h1>
-        <p class="lede">{project.tagline}</p>
-        <div class="ticker-viewport" aria-hidden="true">
-          <ul class="stack">
-            {[...padForTicker(project.stack), ...padForTicker(project.stack)].map((s: string | null) =>
-              s === null ? <li class="ticker-gap" /> : <li>{s}</li>
-            )}
-          </ul>
-        </div>
-        <div class="project-links">
-          <a href={project.repo}>repo →</a>
-          {project.demo && <a href={project.demo}>demo →</a>}
-        </div>
-      </div>
+<Profile title={`${p.title} — ${id.name}`} description={p.tagline} fonts={fonts}>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <a href="/" class="logo" aria-label="Homepage">KV</a>
+      <nav aria-label="Primary" class="mono">
+        <a href="/">Home</a><a href="/projects">Projects</a><a href="/devlog">Build log</a><a href="/cv">CV</a>
+      </nav>
     </header>
-  )}
+    <main id="main">
+      <header class="head">
+        <p class="eyebrow mono"><a href="/projects">Catalogue</a> / {ref}</p>
+        <div class="titlerow">
+          <h1>{p.title}</h1>
+          <span class={`badge ${p.status}`}>{p.status}</span>
+        </div>
+        <p class="lede">{p.tagline}</p>
+        {p.url && <p class="site"><a class="go mono" href={p.url}>Visit the project site →</a></p>}
+      </header>
 
-  <section class="shell" id="devlog-stream">
-    <div class="section-head">
-      <span class="coord">02 / DEVLOG</span>
-      <h2>Build log</h2>
-    </div>
+      <section class="block" aria-labelledby="s-h">
+        <h2 id="s-h"><span class="n mono">{n++}</span>Specifications</h2>
+        <dl class="spec">
+          <dt>Ref</dt><dd class="mono">{ref}</dd>
+          <dt>Status</dt><dd>{p.status}</dd>
+          <dt>Stack</dt><dd class="mono">{p.stack.join(" · ")}</dd>
+          {pinLabels.length > 0 && <><dt>Pins</dt><dd class="mono">{pinLabels.map((l) => <span class="pinchip"><span class="pin" aria-hidden="true"></span> {l}</span>)}</dd></>}
+          <dt>Source</dt><dd class="mono"><a href={p.repo}>{host(p.repo)}</a></dd>
+          {p.demo && <><dt>Demo</dt><dd class="mono"><a href={p.demo}>{host(p.demo)}</a></dd></>}
+          {p.url && <><dt>Own site</dt><dd class="mono"><a href={p.url}>{host(p.url)}</a></dd></>}
+          <dt>Build log</dt><dd class="mono">{devlogs.length ? `${devlogs.length} entries, latest ${ymd(devlogs[0].data.date)}` : "none yet"}</dd>
+        </dl>
+      </section>
 
-    {rendered.length === 0 ? (
-      <p class="empty coord">// no devlogs yet for this project</p>
-    ) : (
-      <ul class="stream">
-        {rendered.map(({ entry, Content }) => (
-          <li class="entry" id={entry.id.replace(/\.md$/, "").replace(/\//g, "--")}>
-            <div class="entry-meta coord">
-              <time datetime={entry.data.date.toISOString()}>
-                {entry.data.date.toISOString().slice(0, 10)}
-              </time>
-              {entry.data.tags.length > 0 && (
-                <div class="ticker-viewport" aria-hidden="true">
-                  <ul class="tags">
-                    {[...padForTicker(entry.data.tags), ...padForTicker(entry.data.tags)].map((t: string | null) =>
-                      t === null ? <li class="ticker-gap" /> : <li>{t}</li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-            <h3>{entry.data.title}</h3>
-            <div class="entry-body">
-              <Content />
-            </div>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
-</Base>
+      {hasCustomPage && (
+        <section class="screenblock" aria-labelledby="f-h">
+          <h2 id="f-h" class="block-h"><span class="n mono">{n++}</span>Front panel <span class="note mono">made by the project itself</span></h2>
+          <div class="custom-screen" style={accentStyle}>
+            <div id="project-custom-root" data-slug={p.slug} data-project={JSON.stringify(project)} data-devlogs={JSON.stringify(devlogSummaries)}></div>
+          </div>
+        </section>
+      )}
 
-{/*
-  Manual mount for a project's custom hero — see the frontmatter comment
-  above hasCustomPage for why this can't go through Astro's own client:*
-  hydration. Lazy (only the current page's entry.tsx, and whatever it
-  imports, is ever fetched) and a no-op on every page without a
-  #project-custom-root. Deliberately NOT wrapped in {hasCustomPage && ...}:
-  Astro can only hoist/process a <script> it can find via static analysis
-  of the template, so a conditionally-rendered <script> is silently left
-  as unprocessed inline text (raw TS syntax, no bundling) instead of being
-  compiled — this one must stay unconditional in the markup.
-*/}
+      <section class="block" id="devlog-stream" aria-labelledby="l-h">
+        <h2 id="l-h"><span class="n mono">{n++}</span>Build log</h2>
+        {rendered.length === 0 ? (
+          <p class="mono">No entries yet for this part.</p>
+        ) : (
+          <>
+            <ol class="toc mono">
+              {rendered.map(({ entry }) => (
+                <li><a href={`#${anchor(entry.id)}`}><time datetime={entry.data.date.toISOString()}>{ymd(entry.data.date)}</time> {entry.data.title}</a></li>
+              ))}
+            </ol>
+            {rendered.map(({ entry, Content }, i) => (
+              <article class="log" id={anchor(entry.id)} aria-labelledby={`${anchor(entry.id)}-t`}>
+                <p class="meta mono">
+                  <span>REV {rendered.length - i}</span>
+                  <time datetime={entry.data.date.toISOString()}>{ymd(entry.data.date)}</time>
+                  {entry.data.tags.length > 0 && <span class="tags">{entry.data.tags.join(" · ")}</span>}
+                </p>
+                <h3 id={`${anchor(entry.id)}-t`}>{entry.data.title}</h3>
+                <div class="prose"><Content /></div>
+              </article>
+            ))}
+          </>
+        )}
+      </section>
+
+      {(prev || next) && (
+        <nav class="block pager mono" aria-label="Other parts">
+          {prev ? <a href={prev.url ?? `/projects/${prev.slug}`} rel="prev">← {prev.ref} {prev.title}</a> : <span></span>}
+          {next && <a href={next.url ?? `/projects/${next.slug}`} rel="next">{next.ref} {next.title} →</a>}
+        </nav>
+      )}
+    </main>
+  </div>
+</Profile>
+
+{/* Must stay unconditional: Astro only bundles a <script> it finds statically. */}
 <script>
   (async () => {
     const root = document.getElementById("project-custom-root");
     if (!root) return;
-    const slug = root.dataset.slug;
     const loaders = import.meta.glob("../../generated/projects/*/entry.tsx") as Record<
       string,
       () => Promise<{ default: (props: { project: unknown; devlogs: unknown }) => any }>
     >;
-    const load = loaders[`../../generated/projects/${slug}/entry.tsx`];
+    const load = loaders[`../../generated/projects/${root.dataset.slug}/entry.tsx`];
     if (!load) return;
     const [{ default: Component }, { createElement }, { createRoot }] = await Promise.all([
       load(),
@@ -171,71 +145,48 @@ const nav = [
 </script>
 
 <style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
+  .titlerow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; }
+  .titlerow .badge { font-size: 13px; }
+  .eyebrow a { color: inherit; }
+  .site { margin: 18px 0 0; }
+  .go { display: inline-block; background: var(--ds-hi); color: var(--ds-ink); border: 2px solid var(--ds-ink); box-shadow: 4px 4px 0 var(--ds-ink); padding: 8px 14px; font-weight: 700; text-decoration: none; }
+  .go:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ds-ink); }
 
-  .project-hero { position: relative; padding-top: clamp(2rem, 5vw, 4rem); padding-bottom: 2rem; }
-  .project-hero-scrim {
-    position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    background: linear-gradient(90deg,
-      color-mix(in oklch, var(--bg) 97%, transparent) 0%,
-      color-mix(in oklch, var(--bg) 94%, transparent) 48%,
-      color-mix(in oklch, var(--bg) 65%, transparent) 65%,
-      transparent 86%);
-    /* Feather top/bottom so the scrim's own box doesn't read as a hard-
-       edged rectangle against the artwork above/below it. */
-    mask-image: linear-gradient(180deg, transparent 0%, black 15%, black 82%, transparent 100%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 15%, black 82%, transparent 100%);
-  }
-  .project-hero-inner { position: relative; z-index: 2; }
-  .project-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
-  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
-  /* Ticker scroll mechanics (.ticker-viewport, track animation) live in
-     global.css, shared with every .stack/.tags list on the site — this
-     just keeps the pill look. */
-  .project-hero-inner .ticker-viewport { margin-top: 1.5rem; }
-  .stack { list-style: none; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
-  .project-links { display: flex; gap: 1.5rem; margin: 1.5rem 0 0.5rem; }
-  .project-links a { color: var(--accent); }
+  .spec { display: grid; grid-template-columns: 8em 1fr; gap: 8px 16px; margin: 0; }
+  .spec dt { font-weight: 700; }
+  .spec dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .pinchip { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; white-space: nowrap; }
 
-  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
-  .section-head h2 { font-size: var(--step-2); }
+  .screenblock { border-bottom: 2px solid var(--ds-ink); }
+  .block-h { padding: 20px clamp(16px, 3vw, 28px) 0; }
+  .note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ds-dim); font-size: 12px; }
+  .custom-screen { border-top: 2px solid var(--ds-ink); border-bottom: 0; min-height: 12rem; }
 
-  .stream { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
-  .entry {
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    padding: 1.5rem;
-  }
-  .entry-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
-  .entry-meta .tags { list-style: none; }
-  .entry-meta .tags li { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); white-space: nowrap; }
-  .entry h3 { font-size: var(--step-1); margin-bottom: 0.75rem; }
-  .entry-body { max-width: var(--measure); color: var(--ink-dim); }
-  .entry-body :global(a) { color: var(--accent); }
-  .entry-body :global(pre) {
-    background: var(--bg-sunken); border: var(--border); border-radius: var(--radius);
-    padding: 1rem; overflow-x: auto;
-  }
+  .toc { list-style: none; padding: 0; margin: 0 0 8px; font-size: 13px; columns: 2 22rem; column-gap: 24px; }
+  .toc li { break-inside: avoid; padding: 2px 0; }
+  .toc a { color: var(--ds-ink); }
+  .toc time { color: var(--ds-dim); margin-right: 6px; }
+  .log { border-top: 1px solid var(--ds-rule); padding: 20px 0 4px; scroll-margin-top: 12px; }
+  .log:target { background: linear-gradient(90deg, var(--ds-hi), transparent 40%); }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; font-size: 12px; color: var(--ds-dim); text-transform: uppercase; letter-spacing: .06em; }
+  .meta span:first-child { background: var(--ds-ink); color: #fff; padding: 0 6px; }
+  .log h3 { font-size: 22px; line-height: 1.15; margin: 6px 0 10px; font-weight: 800; }
 
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+  .prose { max-width: 72ch; }
+  .prose :global(p), .prose :global(ul), .prose :global(ol) { margin: 0 0 12px; }
+  .prose :global(h2), .prose :global(h3), .prose :global(h4) { font-size: 16px; text-transform: none; letter-spacing: 0; margin: 20px 0 8px; display: block; font-weight: 800; }
+  .prose :global(img) { max-width: 100%; height: auto; border: 2px solid var(--ds-ink); }
+  .prose :global(code) { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .88em; background: #efeee8; padding: 1px 4px; overflow-wrap: anywhere; }
+  .prose :global(pre) { background: #111; color: #f2f2ee; padding: 14px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  .prose :global(pre code) { background: none; padding: 0; overflow-wrap: normal; color: inherit; }
+  .prose :global(blockquote) { margin: 0 0 12px; padding-left: 14px; border-left: 4px solid var(--ds-hi); }
+  .prose :global(table) { border-collapse: collapse; display: block; overflow-x: auto; margin: 0 0 12px; }
+  .prose :global(th), .prose :global(td) { border: 1px solid var(--ds-rule); padding: 4px 8px; text-align: left; }
+
+  .pager { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+  .pager a { color: var(--ds-ink); font-weight: 600; }
+  @media (max-width: 640px) {
+    .spec { grid-template-columns: 1fr; gap: 0; }
+    .spec dd { margin-bottom: 10px; }
+  }
 </style>

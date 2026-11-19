@@ -49,6 +49,13 @@
       "branch": "io-page",
       "contentPath": "",
       "enabled": true
+    },
+    {
+      "repo": "stcksmsh/kabl",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true,
+      "website": true
     }
   ]
 }

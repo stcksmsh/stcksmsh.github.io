@@ -7,3 +7,6 @@ src/content/devlogs/
 src/content/_federation.json
 src/generated/projects/
 public/generated/projects/
+
+# agent worktrees
+.claude/worktrees/
