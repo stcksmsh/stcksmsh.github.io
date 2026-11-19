@@ -70,6 +70,8 @@ For each active task record:
 
 ## Last session checkpoint
 
+- 2026-11-20: owner feedback round 1 applied (`bec515e`): pin-configuration figure replaces block diagram, timeline ruler, pointer/scroll motion (reduced-motion safe), generalist copy, grouped skills (new optional `items` field on cv schema). Certifications unverified: owner unsure if still valid, LinkedIn not readable from here.
+
 - 2026-11-20 (overnight): Profile layout + data module, CV prototypes, independent review + fixes, keyboard/print/overflow checks. Branch `proto/root-concepts`, local only, not pushed.
 - 2026-11-19: kit placed in `docs/agent-handoff/`; baseline verified; `CONTENT_AUDIT.md` written. Prototype routes added under `src/pages/proto/` only; no existing page touched.
 - Skill not installed: name `overseer` collides with the user's global Hysteresis `overseer` skill.
