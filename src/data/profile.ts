@@ -46,16 +46,6 @@ const projectDomains: Record<string, string[]> = {
   "beograd-plus-plus": ["android"],
 };
 
-const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
-/** "April 2026" → 2026.25, "2020" → 2020.5, "Present" → now. */
-export function toYear(s?: string): number | null {
-  if (!s) return null;
-  if (/present/i.test(s)) { const d = new Date(); return d.getFullYear() + d.getMonth() / 12; }
-  const y = s.match(/\d{4}/)?.[0]; if (!y) return null;
-  const m = MONTHS.findIndex((n) => s.toLowerCase().includes(n));
-  return Number(y) + (m >= 0 ? m / 12 : 0.5);
-}
-
 export async function loadProfile() {
   const cv = await getCollection("cv");
   const by = (s: string) => cv.filter((e) => e.data.section === s).sort((a, b) => a.data.order - b.data.order);

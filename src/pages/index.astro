@@ -1,216 +1,221 @@
 ---
-// Root homepage — "Datasheet" direction (owner-approved concept C, 2026-11-20):
-// the profile laid out as an engineering component datasheet.
-// Subject link: automotive embedded/Android engineering; brief's C4 "technical manual" reference.
-// Career = revision history, olympiads = characterisation data, projects = application notes.
+// Homepage ("board" skin).
+// The profile drawn as a printed circuit board: the KV chip's pins are the domains,
+// each project/record is a part wired to the pins it uses, contact links are the
+// board's edge-connector fingers. Same paper/ink/yellow family as the datasheet CV.
 import Profile from "../layouts/Profile.astro";
-import { identity as id, loadProfile, domains, toYear } from "../data/profile";
+import { identity as id, loadProfile, domains } from "../data/profile";
+import { buildBoard, type Layout, type PartInput, type Board } from "../lib/board";
+
 const c = await loadProfile();
-const cv = "/cv";
 const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
-const firstYear = yearOf(c.experience.at(-1)?.start);
-// Revisions: oldest role = Rev A, current role = highest letter.
-const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i);
+const firstWorkYear = yearOf(c.experience.at(-1)?.start);
+const cur = c.experience[0];
 
-// Timeline ruler: every dated record, oldest → newest.
-const events = [
-  ...c.awards.map((a) => ({ t: toYear(a.start), label: a.title })),
-  ...c.education.map((e) => ({ t: toYear(e.start), label: `Starts ${e.title} — ${e.org?.split(",")[0]}` })),
-  ...c.experience.map((e) => ({ t: toYear(e.start), label: `${e.title} — ${e.org}` })),
-].filter((e): e is { t: number; label: string } => e.t !== null).sort((a, b) => a.t - b.t)
-  // Same-date records share one marker.
-  .reduce<{ t: number; label: string }[]>((acc, e) => {
-    const last = acc.at(-1);
-    if (last && Math.abs(last.t - e.t) < 0.01) last.label += ` + ${e.label}`; else acc.push({ ...e });
-    return acc;
-  }, []);
-const now = toYear("Present")!;
-const t0 = Math.floor(events[0]?.t ?? now - 1);
-const pos = (t: number) => ((t - t0) / (now - t0)) * 100;
-const years = Array.from({ length: Math.floor(now) - t0 + 1 }, (_, i) => t0 + i);
-const months = Math.round((now - t0) * 12);
-const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
+const parts: PartInput[] = [
+  ...(c.experience.length ? [{
+    id: "work", ref: "J1", kind: "conn" as const, title: "WORK", sub: `${firstWorkYear}–NOW · ${c.experience.length} REVS`, href: "#work",
+    domains: ["auto", "android"], detail: `${cur.title} — ${cur.org}`,
+  }] : []),
+  ...(c.awards.length ? [{
+    id: "results", ref: "Y1", kind: "xtal" as const, title: "OLYMPIADS", sub: "IMO · BMO · IOI", href: "#results",
+    domains: ["math"], detail: c.awards.map((a) => a.title).join(" · "),
+  }] : []),
+  ...c.education.map((e, i) => ({
+    id: `edu-${i}`, ref: `U${20 + i}`, kind: "ic" as const, title: "ETF BELGRADE", sub: "SOFTWARE ENG.", href: "#work",
+    domains: ["math", "systems"], detail: `${e.title} — ${e.org} (${range(e.start, e.end)})`,
+  })),
+  ...c.projects.map((p, i) => ({
+    id: `p-${p.slug}`, ref: `U${i + 2}`, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
+    domains: p.domains, detail: `${p.tagline}  [${p.stack.join(" · ")}]`,
+  })),
+];
+const fingers = [
+  { label: "EMAIL", href: `mailto:${id.email}` },
+  { label: "LINKEDIN", href: id.linkedin },
+  { label: "GITHUB", href: id.github },
+  { label: "CV", href: "/cv" },
+];
+
+const wide: Layout = {
+  w: 1600, h: 1120,
+  chip: { x: 800, y: 560, w: 350, h: 300 },
+  slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }], b: [{ x: 470, y: 1000 }, { x: 1130, y: 1000 }] },
+  part: { w: 232, h: 96 },
+  lanes: { l: [570, 390], r: [1030, 1210] },
+  bottomLaneY: [790, 880],
+  fingers: { y: 1055, x0: 580, x1: 1020, h: 45, wire: true },
+};
+const narrow: Layout = {
+  w: 420, h: 330 + Math.ceil(parts.length / 2) * 150 + 140,
+  chip: { x: 210, y: 150, w: 250, h: 220 },
+  slots: { l: [], r: [], b: parts.map((_, i) => ({ x: i % 2 ? 300 : 120, y: 390 + Math.floor(i / 2) * 150 })) },
+  part: { w: 154, h: 84 },
+  lanes: { l: [38, 14], r: [382, 406] },
+  maxPads: 1,
+  bottomLaneY: [0, 0],
+  fingers: { y: 330 + Math.ceil(parts.length / 2) * 150 + 70, x0: 20, x1: 400, h: 50, wire: false },
+  mode: "stack",
+};
+const boards: [string, Board][] = [["wide", buildBoard(wide, domains, parts, fingers)], ["narrow", buildBoard(narrow, domains, parts, fingers)]];
+const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
 ---
-<Profile title={id.name} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+<Profile title={id.name} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap">
   <a class="skip" href="#main">Skip to content</a>
-  <div class="sheet">
-    <header class="top">
-      <div class="maker"><span class="logo" aria-hidden="true">KV</span><span>{id.location}</span></div>
-      <nav aria-label="Primary" class="mono">
-        <a href="#rev">Revision history</a>
-        <a href="#app">Applications</a>
-        <a href={cv} class="hl">CV ↓</a>
-        <a href={`mailto:${id.email}`} class="hl">Contact</a>
-      </nav>
-    </header>
+  <header class="top">
+    <div class="maker"><span class="logo" aria-hidden="true">KV</span><span>{id.location}</span></div>
+    <nav aria-label="Primary" class="mono">
+      <a href="#work">Work</a>
+      <a href="#selected">Projects</a>
+      <a href="/cv" class="hl">CV</a>
+      <a href={`mailto:${id.email}`} class="hl">Contact</a>
+    </nav>
+  </header>
 
-    <main id="main">
-      <section class="title" aria-labelledby="name">
+  <main id="main">
+    <section class="stage" aria-labelledby="name">
+      <div class="silk">
+        <p class="eyebrow mono">REV {String.fromCharCode(64 + c.experience.length)} · {id.location.toUpperCase()}</p>
         <h1 id="name" aria-label={id.name}>{id.name.split(" ").map((w, wi) => (
           <span class="word" aria-hidden="true">{[...w].map((ch, ci) => <span class="ch" style={`--d:${wi * 6 + ci}`}>{ch}</span>)}</span>
         ))}</h1>
-        <p class="sub">{id.role} — {id.employer}</p>
-        <div class="pn mono">
-          <span>Part no.</span><b>KV-SWE-II</b>
-          <span>Status</span><b class="ok"><i class="led" aria-hidden="true"></i>In production</b>
-          {firstYear && <><span>Since</span><b>{firstYear}</b></>}
-        </div>
-        <div class="ruler" style={`--m:${months}`} data-t0={t0} data-t1={now}>
-          <div class="ticks" aria-hidden="true"></div>
-          {years.map((y) => <span class="yr mono" aria-hidden="true" style={`left:${pos(y)}%`}>{y}</span>)}
-          <ol class="evs" aria-label={`Timeline ${t0}–${Math.floor(now)}`}>
-            {events.map((e) => (
-              <li tabindex="0" style={`left:${pos(e.t)}%`} data-t={e.t} data-label={e.label}><span class="sr-only">{Math.floor(e.t)}: {e.label}</span></li>
+        <p class="role">{id.role} · {id.employer}</p>
+        <p class="intro">{id.intro.join(" ")}</p>
+      </div>
+
+      <div class="probe mono" aria-live="polite">
+        <span class="probe-h">PROBE</span>
+        <b class="probe-t">Hover or tab to a part.</b>
+        <span class="probe-d">Every part on this board is wired to the domains it uses. Click one to open it.</span>
+      </div>
+
+      {boards.map(([key, b]) => (
+        <svg class={`board ${key}`} viewBox={`0 0 ${b.w} ${b.h}`} role="group" aria-label="Circuit board: parts are projects and records, wired to the domains they use">
+          <defs>
+            <pattern id={`grid-${key}`} width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" class="dot" /></pattern>
+          </defs>
+          <rect class="pcb" x="6" y="6" width={b.w - 12} height={b.h - 12} rx="26" />
+          <rect x="6" y="6" width={b.w - 12} height={b.h - 12} rx="26" fill={`url(#grid-${key})`} />
+          {[[40, 40], [b.w - 40, 40], ...(key === "wide" ? [[40, b.h - 40], [b.w - 40, b.h - 40]] : [])].map(([x, y]) => <g class="hole" aria-hidden="true"><circle cx={x} cy={y} r="13" /><circle cx={x} cy={y} r="6" /></g>)}
+
+          <g class="traces" aria-hidden="true">
+            {b.traces.map((t, i) => (
+              <g class="trace" data-net={t.net} data-part={t.part}>
+                <path class="hit" d={t.d} />
+                <path class="cu" d={t.d} pathLength="1" style={`--i:${i}`} />
+                {t.vias.map(([x, y]) => <circle class="via" cx={x} cy={y} r="5" />)}
+                <circle class="pulse" r={key === "wide" ? 4.5 : 3.5}>
+                  <animateMotion dur={`${2.6 + (i % 5) * 0.45}s`} begin={`${(i * 0.37) % 3}s`} repeatCount="indefinite" path={t.d} />
+                </circle>
+              </g>
             ))}
-          </ol>
-          <div class="head" aria-hidden="true"><span class="read mono"></span></div>
-        </div>
-      </section>
-
-      <section class="cols reveal">
-        <div class="block">
-          <h2><span class="n mono">1</span>Features</h2>
-          {/* Hand-condensed from: experience-1..4, award-1..5, federated project stacks.
-              Re-check against src/content/cv when any of those change. */}
-          <ul class="feat">
-            <li>Software engineer shipping production code in automotive infotainment{firstYear && ` since ${firstYear}`}</li>
-            <li>Generalist problem solver: picks the stack the problem needs — Rust, Python, TypeScript, Kotlin</li>
-            <li>Mathematics olympiad background: IMO, BMO, IOI</li>
-            <li>Builds constantly outside work: developer tools, creative coding, audio and web</li>
-          </ul>
-        </div>
-        <div class="block">
-          <h2><span class="n mono">2</span>Description</h2>
-          <p class="desc">{id.intro.join(" ")}</p>
-          <div class="cta">
-            <a href={cv} class="btn">Download full CV</a>
-            <a href={`mailto:${id.email}`} class="btn ghost">Email</a>
-          </div>
-        </div>
-        <figure class="block fig" aria-labelledby="fig1">
-          <figcaption id="fig1" class="mono">Figure 1. Pin configuration — select a pin to trace it through this page</figcaption>
-          <div class="pkg">
-            {[domains.slice(0, 4), domains.slice(4)].map((side, si) => (
-              <ul class={`pins ${si ? "r" : "l"}`}>
-                {side.map((d, k) => (
-                  <li><button type="button" class="pin" data-domain={d.id} data-desc={d.desc} aria-pressed="false" style={`--i:${si * 4 + k}`}>
-                    <span class="no mono" aria-hidden="true">{si ? 8 - k : k + 1}</span><span class="lbl mono">{d.label}</span><span class="trace" aria-hidden="true"></span>
-                  </button></li>
-                ))}
-              </ul>
+            {b.fingers.map((f, i) => (
+              <g class="trace" data-net="io"><path class="cu" d={f.d} pathLength="1" style={`--i:${b.traces.length + i}`} />
+                <circle class="pulse" r="4"><animateMotion dur="3.2s" begin={`${i * 0.8}s`} repeatCount="indefinite" path={f.d} /></circle></g>
             ))}
-            <div class="chip" aria-hidden="true"><span class="notch"></span><b>KV</b><span class="mono">SWE-II</span></div>
-          </div>
-          <p class="chip-read mono" aria-live="polite">8 pins, one engineer. Nothing here is single-purpose.</p>
-          <ol class="trace-out mono" hidden></ol>
-        </figure>
-      </section>
+          </g>
 
-      <section id="rev" class="block wide reveal" aria-labelledby="rev-h">
-        <h2 id="rev-h"><span class="n mono">3</span>Revision history</h2>
-        <div class="tbl">
-          <table>
-            <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Role</th><th scope="col">Organisation</th><th scope="col">Notes</th></tr></thead>
-            <tbody>
-              {c.experience.map((e, i) => (
-                <tr id={`rev-${rev(i).toLowerCase()}`} class={i === 0 ? "cur" : ""} data-domains={isAuto(e.org) ? "auto android" : ""} data-label={`Rev ${rev(i)} · ${e.title}`}>
-                  <td class="mono">{rev(i)}</td>
-                  <td class="mono nowrap">{range(e.start, e.end)}</td>
-                  <th scope="row">{e.title}</th>
-                  <td>{e.org}</td>
-                  <td class="notes">{e.Body ? <details><summary>Read<span class="sr-only"> notes: {e.title}</span></summary><e.Body /></details> : "—"}</td>
-                </tr>
-              ))}
-              {c.education.length > 0 && <tr class="sep"><th colspan="5" scope="colgroup">Education</th></tr>}
-              {c.education.map((e, i) => (
-                <tr id={`edu-${i}`} class="edu" data-domains="math" data-label={`${e.title}, ${e.org?.split(",")[0]}`}>
-                  <td class="mono">—</td>
-                  <td class="mono nowrap">{range(e.start, e.end)}</td>
-                  <th scope="row">{e.title}</th>
-                  <td>{e.org}</td>
-                  <td>—</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <g class="chip" aria-hidden="true">
+            <rect x={b.chip.x - b.chip.w / 2} y={b.chip.y - b.chip.h / 2} width={b.chip.w} height={b.chip.h} rx="6" />
+            <circle class="pin1" cx={b.chip.x - b.chip.w / 2 + 18} cy={b.chip.y - b.chip.h / 2 + 18} r="6" />
+            <text class="chip-kv" x={b.chip.x} y={b.chip.y + (key === "wide" ? 14 : 10)}>KV</text>
+            <text class="chip-sub" x={b.chip.x} y={b.chip.y + (key === "wide" ? 40 : 30)}>SWE-II</text>
+          </g>
 
-      <section class="cols two reveal">
-        <div class="block" aria-labelledby="char-h">
-          <h2 id="char-h"><span class="n mono">4</span>Characterisation data</h2>
-          <table class="kv">
-            <caption class="mono">Table 4-1. Competition results</caption>
-            <tbody>
-              {c.awards.map((a, i) => (
-                <tr id={`res-${i}`} data-domains="math" data-label={a.title}><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div class="block" aria-labelledby="spec-h">
-          <h2 id="spec-h"><span class="n mono">5</span>Specifications</h2>
-          <dl class="spec">
-            {c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.length ? g.items.join(" · ") : g.title}</dd></>)}
-            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join(" · ")}</dd>
-          </dl>
-        </div>
-      </section>
+          <g class="pins">
+            {b.pins.map((p, i) => {
+              const pw = key === "wide" ? 104 : 88, ph = key === "wide" ? 30 : 24, gap = key === "wide" ? 12 : 8;
+              const bx = p.side === "l" ? p.x + gap : p.x - gap - pw;
+              const num = p.side === "l" ? i + 1 : 8 - (i - 4);
+              const n = b.parts.filter((q) => q.domains.includes(p.id)).length;
+              return (
+                <g class="pin" data-net={p.id} tabindex="0" role="button" aria-label={`Net ${p.label}: ${n} part${n === 1 ? "" : "s"}`}>
+                  <line class="leg" x1={p.x} x2={p.side === "l" ? p.x - 14 : p.x + 14} y1={p.y} y2={p.y} />
+                  <line class="bond" x1={p.x} x2={p.side === "l" ? bx : bx + pw} y1={p.y} y2={p.y} />
+                  <rect class="pad-box" x={bx} y={p.y - ph / 2} width={pw} height={ph} rx="3" />
+                  <text class="pin-no" x={p.side === "l" ? bx + 7 : bx + pw - 7} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{num}</text>
+                  <text class="pin-lbl" x={p.side === "l" ? bx + (key === "wide" ? 24 : 20) : bx + pw - (key === "wide" ? 24 : 20)} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{p.label}</text>
+                </g>
+              );
+            })}
+          </g>
 
-      {c.projects.length > 0 && (
-        <section id="app" class="block wide reveal" aria-labelledby="app-h">
-          <h2 id="app-h"><span class="n mono">6</span>Application notes — selected work</h2>
+          {b.parts.map((p) => (
+            <a class={`part ${p.kind}`} href={p.href} data-part={p.id} data-nets={p.domains.join(" ")} aria-label={`${p.ref} ${partBy[p.id].title}: ${p.detail}`}>
+              <rect class="body" x={p.x - p.w / 2} y={p.y - p.h / 2} width={p.w} height={p.h} rx={p.kind === "xtal" ? p.h / 2 : 4} />
+              {p.pads.map((pad) => <rect class="pad" x={pad.x - 7} y={pad.y - 7} width="14" height="14" />)}
+              {p.kind === "conn" && [0, 1, 2, 3].map((k) => <circle class="hdr" cx={p.x - p.w / 2 + 30 + k * ((p.w - 60) / 3)} cy={p.y + p.h / 2 - (key === "wide" ? 16 : 10)} r={key === "wide" ? 6 : 4} />)}
+              <text class="ref" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y - p.h / 2 + 20}>{p.ref}</text>
+              <text class="ttl" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y + (p.kind === "conn" ? 0 : 6)}>{p.title}</text>
+              <text class="sub" x={p.x - p.w / 2 + (p.kind === "xtal" ? 30 : 12)} y={p.y + (p.kind === "conn" ? 15 : 28)}>{p.sub}</text>
+            </a>
+          ))}
+
+          {b.fingers.map((f) => (
+            <a class="finger" href={f.href} aria-label={f.label === "CV" ? "CV (printable)" : f.label === "EMAIL" ? `Email ${id.email}` : f.label}>
+              <rect x={f.x} y={f.y} width={f.w} height={f.h} rx="3" />
+              <text x={f.x + f.w / 2} y={f.y + f.h / 2 + 5}>{f.label}</text>
+            </a>
+          ))}
+          {key === "wide" && <text class="silk-note" x={b.w - 70} y={b.h - 64} text-anchor="end" aria-hidden="true">KV-SWE-II · MADE IN BELGRADE</text>}
+        </svg>
+      ))}
+    </section>
+
+    <section class="sheet" aria-label="Profile">
+      <div class="block" id="work">
+        <h2><span class="n mono">1</span>Work</h2>
+        <ol class="rows">
+          {c.experience.map((e, i) => (
+            <li class={i === 0 ? "cur" : ""}><span class="mono when">{range(e.start, e.end)}</span><span><b>{e.title}</b><br /><span class="org">{e.org}</span></span></li>
+          ))}
+        </ol>
+        <a class="more mono" href="/cv">Full CV with details →</a>
+      </div>
+      <div class="block" id="results">
+        <h2><span class="n mono">2</span>Education &amp; results</h2>
+        <ol class="rows">
+          {c.education.map((e) => <li><span class="mono when">{range(e.start, e.end)}</span><span><b>{e.title}</b><br /><span class="org">{e.org}</span></span></li>)}
+          {c.awards.map((a) => <li><span class="mono when">{a.start}</span><span><b>{a.title}</b></span></li>)}
+        </ol>
+      </div>
+      <div class="block">
+        <h2><span class="n mono">3</span>Skills</h2>
+        <dl class="spec">{c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.join(" · ")}</dd></>)}</dl>
+      </div>
+    </section>
+
+    {c.projects.length > 0 && (
+      <section class="sheet one" id="selected" aria-labelledby="sel-h">
+        <div class="block">
+          <h2 id="sel-h"><span class="n mono">4</span>Selected work</h2>
           <ol class="apps">
             {c.projects.map((p, i) => (
-              <li id={`an-${p.slug}`} data-domains={p.domains.join(" ")} data-label={`AN-${String(i + 1).padStart(2, "0")} · ${p.title}`}>
-                <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
-                <a href={p.url ?? `/projects/${p.slug}`}><b>{p.title}</b></a>
-                <span class="tag">{p.tagline}</span>
-                <span class="mono st">{p.stack.join(" · ")}</span>
-              </li>
+              <li data-part={`p-${p.slug}`}><span class="mono an">U{i + 2}</span><a href={p.url ?? `/projects/${p.slug}`}><b>{p.title}</b></a><span class="tag">{p.tagline}</span><span class="mono st">{p.stack.join(" · ")}</span></li>
             ))}
           </ol>
-        </section>
-      )}
-
-      <section class="block wide order reveal" aria-labelledby="ord-h">
-        <h2 id="ord-h"><span class="n mono">7</span>Ordering information</h2>
-        <ul class="mono">
-          <li><span>Email</span><a href={`mailto:${id.email}`}>{id.email}</a></li>
-          <li><span>LinkedIn</span><a href={id.linkedin}>kostavukicevic</a></li>
-          <li><span>GitHub</span><a href={id.github}>stcksmsh</a></li>
-          <li><span>CV</span><a href={cv}>/cv — printable</a></li>
-        </ul>
+        </div>
       </section>
-    </main>
-    <footer class="foot mono"><span>{id.name} · <a href="/projects">All projects</a> · <a href="/devlog">Devlog</a> · <a href="/music">Music</a></span><span>KV-SWE-II{c.experience.length > 0 && ` · Rev ${rev(0)}`}</span></footer>
-  </div>
+    )}
+  </main>
+  <footer class="foot mono"><span>{id.name} · <a href={`mailto:${id.email}`}>{id.email}</a> · <a href={id.linkedin}>LinkedIn</a> · <a href={id.github}>GitHub</a> · <a href="/cv">CV</a></span><span><a href="/projects">All projects</a> · <a href="/devlog">Devlog</a> · <a href="/music">Music</a></span></footer>
 </Profile>
 
 <script>
-  const root = document.documentElement;
-  root.classList.add("js");
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) document.querySelectorAll<SVGSVGElement>("svg.board").forEach((s) => s.pauseAnimations());
 
-  // Sections slide in as they enter the viewport.
-  const reveals = document.querySelectorAll(".reveal");
-  if (reduce || !("IntersectionObserver" in window)) reveals.forEach((el) => el.classList.add("in"));
-  else {
-    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.08 });
-    reveals.forEach((el) => io.observe(el));
-  }
-
-  // Name: letters widen toward the pointer (variable-font width axis).
-  const title = document.querySelector<HTMLElement>(".title");
+  // Name letters widen toward the pointer (Archivo's width axis).
+  const stage = document.querySelector<HTMLElement>(".stage");
   const chars = [...document.querySelectorAll<HTMLElement>("#name .ch")];
-  if (title && !reduce && matchMedia("(pointer: fine)").matches) {
+  if (stage && !reduce && matchMedia("(pointer: fine)").matches) {
     let centers: { x: number; y: number }[] = [];
     let frame = 0;
     const measure = () => { centers = chars.map((c) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }); };
-    title.addEventListener("pointerenter", measure);
     addEventListener("scroll", () => (centers = []), { passive: true });
-    title.addEventListener("pointermove", (ev) => {
+    addEventListener("resize", () => (centers = []));
+    stage.addEventListener("pointermove", (ev) => {
       if (!centers.length) measure();
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => chars.forEach((c, i) => {
@@ -218,229 +223,188 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
         c.style.setProperty("--w", String(62 + 58 * Math.max(0, 1 - d / 300) ** 1.5));
       }));
     });
-    title.addEventListener("pointerleave", () => { cancelAnimationFrame(frame); chars.forEach((c) => c.style.removeProperty("--w")); });
+    stage.addEventListener("pointerleave", () => chars.forEach((c) => c.style.removeProperty("--w")));
   }
 
-  // Timeline ruler: a scan head; hover/focus reads out the nearest record.
-  const ruler = document.querySelector<HTMLElement>(".ruler");
-  if (ruler) {
-    const head = ruler.querySelector<HTMLElement>(".head")!;
-    const read = ruler.querySelector<HTMLElement>(".read")!;
-    const evs = [...ruler.querySelectorAll<HTMLElement>(".evs li")];
-    const t0 = Number(ruler.dataset.t0), t1 = Number(ruler.dataset.t1);
-    const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    const show = (t: number, label?: string) => {
-      ruler.classList.add("tracking");
-      const p = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)));
-      head.style.left = `${p * 100}%`;
-      head.classList.toggle("flip", p > 0.7);
-      read.textContent = label ?? `${MONTHS[Math.min(11, Math.floor((t % 1) * 12))]} ${Math.floor(t)}`;
-      evs.forEach((e) => e.classList.toggle("hit", e.dataset.label === label));
-    };
-    const at = (x: number) => {
-      const r = ruler.getBoundingClientRect();
-      const t = t0 + ((x - r.left) / r.width) * (t1 - t0);
-      const near = evs.map((e) => ({ e, d: Math.abs(Number(e.dataset.t) - t) })).sort((a, b) => a.d - b.d)[0];
-      if (near && near.d < 0.35) show(Number(near.e.dataset.t), `${Math.floor(Number(near.e.dataset.t))} · ${near.e.dataset.label}`);
-      else show(t);
-    };
-    ruler.addEventListener("pointermove", (e) => at(e.clientX));
-    ruler.addEventListener("pointerdown", (e) => at(e.clientX));
-    ruler.addEventListener("pointerleave", () => { ruler.classList.remove("tracking"); evs.forEach((e) => e.classList.remove("hit")); });
-    evs.forEach((e) => e.addEventListener("focus", () => show(Number(e.dataset.t), `${Math.floor(Number(e.dataset.t))} · ${e.dataset.label}`)));
-    evs.forEach((e) => e.addEventListener("blur", () => ruler.classList.remove("tracking")));
-  }
-
-  // Pin configuration: select a domain, light up the matching records.
-  const pins = [...document.querySelectorAll<HTMLButtonElement>(".pin")];
-  const out = document.querySelector<HTMLElement>(".chip-read");
-  const idle = out?.textContent ?? "";
-  const list = document.querySelector<HTMLOListElement>(".trace-out");
-  pins.forEach((pin) => pin.addEventListener("click", () => {
-    const d = root.dataset.pin === pin.dataset.domain ? "" : pin.dataset.domain!;
-    root.dataset.pin = d;
-    pins.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.domain === d)));
-    let n = 0;
-    document.querySelectorAll<HTMLElement>("[data-domains]").forEach((el) => {
-      const on = !!d && el.dataset.domains!.split(" ").includes(d);
-      if (on) n++;
-      el.classList.toggle("lit", on);
-      el.classList.toggle("dim", !!d && !on);
+  // Probe: hovering/focusing a part lights its nets; hovering a trace names its net.
+  const probeT = document.querySelector<HTMLElement>(".probe-t")!;
+  const probeD = document.querySelector<HTMLElement>(".probe-d")!;
+  const idleT = probeT.textContent, idleD = probeD.textContent;
+  const labels: Record<string, string> = Object.fromEntries([...document.querySelectorAll<SVGGElement>(".pin")].map((p) => [p.dataset.net!, p.querySelector(".pin-lbl")!.textContent!.trim()]));
+  const clear = () => {
+    document.querySelectorAll(".on, .off").forEach((el) => el.classList.remove("on", "off"));
+    document.body.classList.remove("probing");
+    probeT.textContent = idleT; probeD.textContent = idleD;
+  };
+  const light = (match: (el: HTMLElement | SVGElement) => boolean) => {
+    document.body.classList.add("probing");
+    document.querySelectorAll<SVGElement>(".trace, .pin, .part").forEach((el) => {
+      const on = match(el);
+      el.classList.toggle("on", on); el.classList.toggle("off", !on);
     });
-    if (out) out.textContent = d ? `${pin.dataset.desc} → ${n} record${n === 1 ? "" : "s"}:` : idle;
-    if (list) {
-      list.replaceChildren(...[...document.querySelectorAll<HTMLElement>(".lit")].map((el) => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = `#${el.id}`;
-        a.textContent = el.dataset.label ?? el.id;
-        li.append(a);
-        return li;
-      }));
-      list.hidden = !d;
-    }
-  }));
-
-  // Following a trace: scroll to the record and flash it.
-  list?.addEventListener("click", (ev) => {
-    const a = (ev.target as HTMLElement).closest("a");
-    if (!a) return;
-    const target = document.querySelector<HTMLElement>(a.getAttribute("href")!);
-    if (!target) return;
-    ev.preventDefault();
-    target.closest(".reveal")?.classList.add("in");
-    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
-    history.replaceState(null, "", a.getAttribute("href"));
-    target.classList.remove("flash"); void target.offsetWidth; target.classList.add("flash");
-    target.setAttribute("tabindex", "-1"); target.focus({ preventScroll: true });
+  };
+  document.querySelectorAll<SVGAElement>(".part").forEach((part) => {
+    const show = () => {
+      const nets = part.dataset.nets!.split(" ");
+      light((el) => el === part || (el as SVGElement).dataset.part === part.dataset.part || (el.classList.contains("pin") && nets.includes((el as SVGElement).dataset.net!)));
+      const [head, ...rest] = part.getAttribute("aria-label")!.split(": ");
+      probeT.textContent = head;
+      probeD.textContent = `${rest.join(": ")}  ⟶ nets: ${nets.map((n) => labels[n] ?? n).join(", ")}`;
+    };
+    part.addEventListener("pointerenter", show);
+    part.addEventListener("focus", show);
+    part.addEventListener("pointerleave", clear);
+    part.addEventListener("blur", clear);
+  });
+  // A net (one chip pin + its traces + the parts on it) lights from the pin pad or any of its traces.
+  const showNet = (net: string) => {
+    light((el) => (el as SVGElement).dataset.net === net || ((el as SVGElement).classList.contains("part") && (el as SVGElement).dataset.nets!.split(" ").includes(net)));
+    const names = [...new Set([...document.querySelectorAll<SVGAElement>("svg.board:not([hidden]) .part.on")].filter((p) => p.getClientRects().length).map((p) => p.getAttribute("aria-label")!.split(":")[0].replace(/^\S+\s/, "")))];
+    probeT.textContent = `NET ${labels[net] ?? net}`;
+    probeD.textContent = names.length ? `On this net: ${names.join(", ")}` : "Nothing on this net yet.";
+  };
+  document.querySelectorAll<SVGGElement>(".trace[data-part], .pin").forEach((t) => {
+    t.addEventListener("pointerenter", () => showNet(t.dataset.net!));
+    t.addEventListener("pointerleave", clear);
+  });
+  document.querySelectorAll<SVGGElement>(".pin").forEach((p) => {
+    p.addEventListener("focus", () => showNet(p.dataset.net!));
+    p.addEventListener("blur", clear);
   });
 </script>
 
 <style is:global>
-  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --line: #111; --hi: #ffd400; --blue: #0b4fb3; }
+  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --hi: #ffd400; --blue: #0b4fb3; --pcb: #f6f4ec; --dotc: #d9d5c6; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; font-variation-settings: "wdth" 100; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; }
   a { color: var(--blue); }
   :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
   .skip { position: absolute; left: -999px; } .skip:focus { left: 16px; top: 8px; background: var(--ink); color: #fff; padding: 6px 10px; z-index: 9; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  .sheet { max-width: 1180px; margin: clamp(0px, 3vw, 40px) auto; background: var(--paper); border: 2px solid var(--line); box-shadow: 10px 10px 0 var(--ink); }
-  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 2px solid var(--line); flex-wrap: wrap; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px clamp(16px, 3vw, 32px); background: var(--paper); border-bottom: 2px solid var(--ink); position: sticky; top: 0; z-index: 5; }
   .maker { display: flex; align-items: center; gap: 10px; font-weight: 600; }
-  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; font-variation-settings: "wdth" 125; letter-spacing: .04em; }
+  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; font-variation-settings: "wdth" 125; }
   .top nav { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; }
   .top nav a { color: var(--ink); text-decoration: none; }
   .top nav a.hl { background: var(--hi); padding: 2px 8px; font-weight: 600; }
 
-  .title { padding: clamp(28px, 6vw, 72px) clamp(16px, 4vw, 40px) 0; position: relative; }
-  .pn { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 13px; position: absolute; right: clamp(16px, 4vw, 40px); top: clamp(28px, 6vw, 72px); border: 2px solid var(--line); padding: 8px 12px; }
-  .pn span { color: var(--dim); } .pn .ok { background: var(--hi); padding: 0 4px; display: inline-flex; align-items: center; gap: 6px; }
-  .led { width: 8px; height: 8px; border-radius: 50%; background: #1a9c4a; box-shadow: 0 0 0 0 #1a9c4a; animation: led 2.4s ease-out infinite; }
-  @keyframes led { 0% { box-shadow: 0 0 0 0 rgba(26,156,74,.7); } 70%, 100% { box-shadow: 0 0 0 7px rgba(26,156,74,0); } }
-  h1 { font-size: clamp(52px, 10.5vw, 148px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.01em; margin: 0; }
+  /* Board stage */
+  .stage { position: relative; max-width: 1600px; margin: clamp(0px, 2vw, 28px) auto 0; padding: 0 clamp(0px, 2vw, 28px); container-type: inline-size; }
+  .board { display: block; width: 100%; height: auto; }
+  .board.narrow { display: none; }
+  .pcb { fill: var(--pcb); stroke: var(--ink); stroke-width: 3; }
+  .dot { fill: var(--dotc); }
+  .hole circle:first-child { fill: none; stroke: var(--ink); stroke-width: 2; } .hole circle:last-child { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+  .silk-note { font: 600 13px "JetBrains Mono", monospace; fill: var(--dim); letter-spacing: .1em; }
+
+  .silk { position: absolute; left: calc(clamp(0px, 2vw, 28px) + 4.4cqw); top: 3.4cqw; width: 46cqw; pointer-events: none; z-index: 2; }
+  .silk a, .silk h1 { pointer-events: auto; }
+  .eyebrow { font-size: max(11px, .8cqw); letter-spacing: .14em; color: var(--dim); margin: 0 0 .4cqw; }
+  h1 { font-size: 7.6cqw; line-height: .9; font-weight: 900; text-transform: uppercase; margin: 0; }
   .word { display: block; white-space: nowrap; }
   .ch { display: inline-block; font-variation-settings: "wdth" var(--w, 62); transition: font-variation-settings .35s cubic-bezier(.2,.8,.2,1); animation: settle .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--d) * 45ms); }
-  @keyframes settle { from { font-variation-settings: "wdth" 125; opacity: 0; } to { font-variation-settings: "wdth" 62; opacity: 1; } }
-  .sub { font-size: clamp(18px, 2.2vw, 26px); font-weight: 600; font-variation-settings: "wdth" 85; margin: 14px 0 0; }
-  .ruler { position: relative; height: 46px; margin: 26px 0 0; border-bottom: 2px solid var(--line); touch-action: pan-y; cursor: crosshair; }
-  .ticks { position: absolute; inset: auto 0 0 0; height: 10px; background: linear-gradient(90deg, var(--ink) 0 1px, transparent 1px) 0 0 / calc(100% / var(--m)) 100% repeat-x; }
-  .yr { position: absolute; bottom: 0; height: 40px; border-left: 2px solid var(--ink); padding-left: 4px; font-size: 11px; line-height: 1; color: var(--dim); }
-  .evs { list-style: none; margin: 0; padding: 0; }
-  .evs li { position: absolute; bottom: 14px; width: 10px; height: 10px; margin-left: -5px; background: var(--hi); border: 2px solid var(--ink); transform: rotate(45deg); outline-offset: 4px; }
-  .evs li.hit { background: var(--ink); }
-  .head { position: absolute; top: -6px; bottom: -2px; left: 0; width: 2px; background: var(--blue); pointer-events: none; animation: sweep 16s ease-in-out infinite alternate; }
-  .ruler.tracking .head { animation: none; }
-  .read { position: absolute; top: -20px; left: 6px; white-space: nowrap; font-size: 11px; background: var(--blue); color: #fff; padding: 1px 6px; opacity: 0; transition: opacity .2s; }
-  .head.flip .read { left: auto; right: 6px; }
-  .ruler.tracking .read { opacity: 1; }
-  @keyframes sweep { from { left: 0; } to { left: 100%; } }
+  @keyframes settle { from { font-variation-settings: "wdth" 125; opacity: 0; } }
+  .role { font-weight: 700; font-variation-settings: "wdth" 85; font-size: max(15px, 1.35cqw); margin: .9cqw 0 0; }
+  .intro { font-size: max(14px, 1.05cqw); max-width: min(34em, 33cqw); margin: .6cqw 0 0; color: #333; }
 
-  .cols { display: grid; grid-template-columns: 1fr 1fr 1.15fr; border-bottom: 2px solid var(--line); }
-  .cols.two { grid-template-columns: 1fr 1fr; }
-  .cols > .block + .block { border-left: 2px solid var(--line); }
-  .block { padding: 22px clamp(16px, 3vw, 28px) 26px; margin: 0; }
-  .wide { border-bottom: 2px solid var(--line); }
+  .probe { position: absolute; right: calc(clamp(0px, 2vw, 28px) + 4cqw); top: 3.4cqw; width: 30cqw; z-index: 2; background: var(--ink); color: #eee; padding: 10px 14px; font-size: max(11px, .8cqw); display: grid; gap: 4px; box-shadow: 6px 6px 0 var(--hi); }
+  .probe-h { color: var(--hi); letter-spacing: .14em; font-weight: 700; }
+  .probe-t { color: #fff; font-size: 1.15em; }
+  .probe-d { color: #bbb; min-height: 3em; }
+
+  .cu { fill: none; stroke: #2a2a2a; stroke-width: 2.6; stroke-linejoin: round; stroke-dasharray: 1; animation: draw 1.4s cubic-bezier(.6,0,.2,1) backwards; animation-delay: calc(.4s + var(--i) * 45ms); transition: stroke .2s, opacity .2s, stroke-width .2s; }
+  @keyframes draw { from { stroke-dashoffset: 1; } }
+  .hit { fill: none; stroke: transparent; stroke-width: 16; pointer-events: stroke; }
+  .via { fill: var(--pcb); stroke: var(--ink); stroke-width: 2.5; }
+  .pulse { fill: var(--hi); stroke: var(--ink); stroke-width: 1.5; }
+
+  .chip rect { fill: var(--ink); }
+  .pin1 { fill: #444; }
+  .chip-kv { font: 900 52px "Archivo", sans-serif; font-variation-settings: "wdth" 125; fill: var(--hi); text-anchor: middle; }
+  .chip-sub { font: 600 15px "JetBrains Mono", monospace; fill: #bbb; text-anchor: middle; letter-spacing: .1em; }
+  .narrow .chip-kv { font-size: 30px; } .narrow .chip-sub { font-size: 11px; }
+  .pin { cursor: crosshair; }
+  .pin .leg { stroke: var(--ink); stroke-width: 6; }
+  .pin .bond { stroke: #777; stroke-width: 1.5; }
+  .pin .pad-box { fill: #222; stroke: #555; stroke-width: 1.5; transition: fill .2s, stroke .2s; }
+  .pin .pin-no { font: 600 10px "JetBrains Mono", monospace; fill: #888; }
+  .pin .pin-lbl { font: 700 13px "JetBrains Mono", monospace; fill: #eee; letter-spacing: .04em; }
+  .narrow .pin .pin-lbl { font-size: 10.5px; } .narrow .pin .pin-no { font-size: 9px; }
+  .pin:hover .pad-box, .pin:focus .pad-box { fill: var(--hi); stroke: var(--hi); }
+  .pin:hover .pin-lbl, .pin:focus .pin-lbl, .pin:hover .pin-no, .pin:focus .pin-no { fill: var(--ink); }
+  .pin:focus { outline: none; } .pin:focus-visible .pad-box { stroke: var(--blue); stroke-width: 4; }
+
+  .part { cursor: pointer; }
+  .part .body { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; transition: fill .2s; }
+  .part.xtal .body { fill: #fff8d1; }
+  .part .pad { fill: var(--hi); stroke: var(--ink); stroke-width: 2; }
+  .part .hdr { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+  .part .ref { font: 600 12px "JetBrains Mono", monospace; fill: var(--dim); }
+  .part .ttl { font: 900 22px "Archivo", sans-serif; font-variation-settings: "wdth" 75; fill: var(--ink); }
+  .part .sub { font: 500 11px "JetBrains Mono", monospace; fill: var(--dim); letter-spacing: .06em; }
+  .narrow .part .ttl { font-size: 15px; font-variation-settings: "wdth" 62; } .narrow .part .ref, .narrow .part .sub { font-size: 10px; }
+  .part:hover .body, .part:focus .body, .part.on .body { fill: var(--hi); }
+  .part:focus { outline: none; } .part:focus-visible .body { stroke: var(--blue); stroke-width: 5; }
+
+  .finger rect { fill: #e8c25a; stroke: var(--ink); stroke-width: 2; transition: fill .2s; }
+  .finger text { font: 700 13px "JetBrains Mono", monospace; text-anchor: middle; fill: var(--ink); }
+  .narrow .finger text { font-size: 11.5px; }
+  .finger:hover rect, .finger:focus rect { fill: var(--hi); }
+  .finger:focus { outline: none; } .finger:focus-visible rect { stroke: var(--blue); stroke-width: 5; }
+
+  .probing .trace.off, .probing .part.off { opacity: .22; }
+  .probing .pin.off { opacity: .35; }
+  .trace.on .cu { stroke: var(--blue); stroke-width: 4.5; }
+  .pin.on .leg, .pin.on .bond { stroke: var(--blue); } .pin.on .pad-box { fill: var(--hi); stroke: var(--blue); } .pin.on .pin-lbl, .pin.on .pin-no { fill: var(--ink); }
+
+  /* Structured profile under the board */
+  .sheet { width: min(1544px, 100% - 2 * clamp(16px, 2vw, 28px)); margin: 28px auto 0; background: var(--paper); border: 2px solid var(--ink); display: grid; grid-template-columns: 1.1fr 1fr 1fr; }
+  .sheet.one { grid-template-columns: 1fr; }
+  .sheet .block + .block { border-left: 2px solid var(--ink); }
+  .block { padding: 22px clamp(16px, 2.5vw, 28px); }
   h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 14px; display: flex; gap: 10px; align-items: baseline; }
   .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }
-  .feat { margin: 0; padding-left: 1.1em; } .feat li { margin-bottom: 8px; } .feat li::marker { content: "■  "; font-size: .7em; }
-  .desc { margin: 0 0 18px; font-size: 17px; }
-  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
-  .btn { background: var(--ink); color: #fff; padding: 9px 16px; text-decoration: none; font-weight: 700; }
-  .btn.ghost { background: var(--hi); color: var(--ink); }
-  .fig figcaption { font-size: 12px; color: var(--dim); margin-bottom: 12px; }
-  .pkg { display: grid; grid-template-columns: 1fr minmax(74px, .7fr) 1fr; align-items: stretch; }
-  .pins { list-style: none; margin: 0; padding: 10px 0; display: grid; gap: 8px; }
-  .pin { width: 100%; display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--ink); font: inherit; text-align: left; }
-  .pins.l { grid-column: 1; } .pins.r { grid-column: 3; } .chip { grid-column: 2; grid-row: 1; }
-  .pins.r .pin { grid-template-columns: 1fr auto auto; }
-  .pins.r .trace { order: -1; } .pins.r .no { order: 1; }
-  .pin .no { font-size: 10px; color: var(--dim); }
-  .pin .lbl { font-size: 12px; font-weight: 600; padding: 1px 4px; }
-  .trace { position: relative; height: 2px; background: var(--ink); overflow: hidden; min-width: 16px; }
-  .trace::after { content: ""; position: absolute; top: -2px; width: 10px; height: 6px; background: var(--hi); animation: pulse 2.6s linear infinite; animation-delay: calc(var(--i) * -.37s); }
-  .pins.l .trace::after { left: -10px; animation-name: pulse-r; }
-  .pins.r .trace::after { right: -10px; animation-name: pulse-l; }
-  @keyframes pulse-r { to { transform: translateX(calc(100% + 140px)); } }
-  @keyframes pulse-l { to { transform: translateX(calc(-100% - 140px)); } }
-  .pin:hover .lbl, .pin[aria-pressed="true"] .lbl { background: var(--ink); color: var(--hi); }
-  .pin[aria-pressed="true"] .trace { background: var(--blue); height: 3px; }
-  .chip { position: relative; border: 2px solid var(--ink); background: var(--ink); color: var(--hi); display: grid; place-content: center; text-align: center; gap: 2px; }
-  .chip b { font-size: 26px; font-weight: 900; font-variation-settings: "wdth" 125; line-height: 1; }
-  .chip .mono { font-size: 10px; color: #ddd; }
-  .notch { position: absolute; top: -2px; left: 50%; width: 20px; height: 10px; margin-left: -10px; border-radius: 0 0 10px 10px; background: var(--paper); border: 2px solid var(--ink); border-top: 0; }
-  .chip-read { font-size: 12px; margin: 14px 0 0; color: var(--dim); }
-  .trace-out { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
-  .trace-out a { display: inline-block; padding: 3px 8px; border: 2px solid var(--ink); color: var(--ink); text-decoration: none; background: var(--paper); }
-  .trace-out a::after { content: " ↓"; }
-  .trace-out a:hover { background: var(--ink); color: var(--hi); }
-  .trace-out li { animation: pop .3s both; } .trace-out li:nth-child(2) { animation-delay: .05s; } .trace-out li:nth-child(3) { animation-delay: .1s; } .trace-out li:nth-child(n+4) { animation-delay: .15s; }
-  @keyframes pop { from { opacity: 0; transform: translateY(4px); } }
-  .flash { animation: flash 1.4s ease-out; outline: none; }
-  @keyframes flash { 0%, 30% { box-shadow: inset 0 0 0 3px var(--blue); background-color: var(--hi); } }
-  :root[data-pin]:not([data-pin=""]) .chip { animation: chip 1.2s ease-in-out infinite alternate; }
-  @keyframes chip { to { box-shadow: 0 0 0 4px var(--hi); } }
-
-  [data-domains] { transition: opacity .3s, background-color .3s; }
-  .dim { opacity: .28; }
-  .lit { background-color: rgba(255, 212, 0, .35) !important; }
-  .js .reveal { transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
-  .js .reveal:not(.in) { opacity: 0; transform: translateY(24px); }
-  #rev.in tbody tr { animation: row .5s both; }
-  #rev.in tbody tr:nth-child(2) { animation-delay: .08s; } #rev.in tbody tr:nth-child(3) { animation-delay: .16s; }
-  #rev.in tbody tr:nth-child(4) { animation-delay: .24s; } #rev.in tbody tr:nth-child(n+5) { animation-delay: .32s; }
-  @keyframes row { from { opacity: 0; transform: translateX(-12px); } }
-
-  .tbl { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; }
-  #rev th, #rev td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid #bbb; vertical-align: top; }
-  #rev thead th { border-bottom: 2px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  #rev tbody th { font-weight: 700; }
-  #rev tr.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
-  :root[data-pin]:not([data-pin=""]) #rev tr.cur:not(.lit) { background: none; }
-  #rev tr.edu td, #rev tr.edu th { color: var(--dim); }
-  #rev tr.sep th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding-top: 16px; border-bottom: 2px solid var(--line); }
-  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .nowrap { white-space: nowrap; font-size: 13px; }
-  .notes details { max-width: 34em; } .notes summary { cursor: pointer; color: var(--blue); } .notes p { margin: 8px 0; }
-  .kv caption { text-align: left; font-size: 12px; color: var(--dim); padding-bottom: 6px; }
-  .kv td, .kv th { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid #bbb; font-weight: 600; }
-  .kv td { font-weight: 400; width: 4.5em; }
-  .spec { display: grid; grid-template-columns: 10.5em 1fr; gap: 10px 12px; margin: 0; }
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li { display: grid; grid-template-columns: 12.5em 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid #ccc; }
+  .rows li.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
+  .when { font-size: 12px; padding-top: 2px; }
+  .org { color: var(--dim); }
+  .more { display: inline-block; margin-top: 12px; font-size: 13px; }
+  .spec { display: grid; grid-template-columns: 9.5em 1fr; gap: 8px 12px; margin: 0; }
   .spec dt { font-weight: 700; } .spec dd { margin: 0; }
-
-  .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
-  .apps li { display: grid; grid-template-columns: 4.5em 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid #bbb; }
+  .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 28px; }
+  .apps li { display: grid; grid-template-columns: 3em 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid #ccc; }
   .an { grid-row: span 3; font-size: 12px; color: var(--dim); padding-top: 3px; }
   .apps a { color: var(--ink); font-size: 18px; } .apps a:hover { color: var(--blue); }
   .tag { font-size: 15px; } .st { font-size: 11px; color: var(--dim); }
+  .foot { width: min(1544px, 100% - 2 * clamp(16px, 2vw, 28px)); margin: 0 auto 32px; display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; padding: 12px 0; font-size: 12px; color: var(--dim); }
 
-  .order ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .order li { border: 2px solid var(--line); padding: 10px 12px; display: grid; gap: 4px; font-size: 14px; overflow-wrap: anywhere; }
-  .order li span { font-size: 11px; color: var(--dim); text-transform: uppercase; }
-  .foot { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; padding: 10px 20px; font-size: 12px; color: var(--dim); }
-
-  @media (max-width: 900px) {
-    .cols, .cols.two { grid-template-columns: 1fr; }
-    .cols > .block + .block { border-left: 0; border-top: 2px solid var(--line); }
-    .apps { grid-template-columns: 1fr; }
-    .order ul { grid-template-columns: 1fr 1fr; }
-    .pn { position: static; display: inline-grid; margin-top: 18px; }
-    .yr:nth-of-type(even) { color: transparent; }
+  @media (max-width: 1100px) {
+    .sheet { grid-template-columns: 1fr; }
+    .sheet .block + .block { border-left: 0; border-top: 2px solid var(--ink); }
+    .apps { grid-template-columns: 1fr 1fr; }
   }
-  @media (max-width: 560px) {
-    .sheet { box-shadow: none; border-width: 0 0 2px; }
+  @media (max-width: 1100px) {
+    .board.wide { display: none; } .board.narrow { display: block; }
+    .stage { padding: 0 8px; max-width: 640px; }
+    .silk { position: static; width: auto; padding: 22px 8px 16px; }
+    h1 { font-size: 17cqw; }
+    .role { font-size: 16px; margin-top: 10px; } .intro { font-size: 15px; margin-top: 6px; max-width: 34em; }
+    .eyebrow { font-size: 11px; }
+    .probe { display: none; }
+  }
+  @media (max-width: 760px) {
     .top nav a:not(.hl) { display: none; }
-    #rev thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    #rev tr.sep { display: block; }
-    #rev tr { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 10px 0; border-bottom: 1px solid #bbb; }
-    #rev th, #rev td { border: 0; padding: 0; }
-    #rev td:first-child { grid-row: span 4; }
-    .order ul { grid-template-columns: 1fr; }
-    .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 10px; }
+    .rows li { grid-template-columns: 1fr; gap: 0; }
+    .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 8px; }
+    .apps { grid-template-columns: 1fr; }
+    .sheet { width: calc(100% - 16px); margin-top: 16px; }
+    .maker span:last-child { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
-    .head { display: none; } .ruler.tracking .head { display: block; }
+    .pulse { display: none; }
   }
 </style>
