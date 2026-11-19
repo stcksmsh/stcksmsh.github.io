@@ -72,16 +72,18 @@
 - Phase 3 software index (`150e7a8`): `/projects` = parts catalogue (filter by search/pin/status, collapses to cards ≤760px), `/projects/[slug]` = part datasheet (specs, custom "front panel" screen, build log as revisions, prev/next). Both on Profile layout. `loadParts()` gives stable U-refs shared with the board. Custom heroes get legacy tokens via `src/styles/custom-page-host.css` (zero-specificity selectors). Verified in headless Chrome at 1440/390/320: no overflow (Kap's code-line overflow fixed), no console errors, filters work, Mouthpiece renders.
 - Still legacy on Base.astro: `/devlog`, `/music`.
 
-## Level 3 pilot: kabl (session 4, in progress)
-- Owner chose **kabl** and OK'd pushing its `website` branch.
-- `website` (orphan) pushed to `stcksmsh/kabl`: bootstrap commit `f27f48d` + content `9e3eda8`. It's a rack-style instrument page from kabl's README only: README screenshots, the 24 module kinds, functional cables (per docs/functional-cables), and a crate graph from the real Cargo.toml deps with transitive edges removed. Verified locally under `/kabl/` at 1440/390/320.
-- CI run 44516754380: build ✓; deploy ✗ "Ensure GitHub Pages has been enabled". **Owner step:** kabl Settings → Pages → Source "GitHub Actions" (or OK me to `gh api -X POST repos/stcksmsh/kabl/pages -f build_type=workflow`), then re-run the workflow.
-- `io-page` branch created **locally only** in the kabl clone (`5da00a6`: meta.json featured:false order 7 + notify-site.yml). **Needs owner OK to push.**
-- Then: add `{ "repo": "stcksmsh/kabl", "branch": "io-page", "contentPath": "", "enabled": true, "website": true }` to `projects.manifest.json`, run `npm run federate`, expect `✓ kabl: 0 devlog(s), website https://stcksmsh.github.io/kabl/ (public)`.
-- No GitHub release exists for kabl; the site words the tarball section conditionally.
-- Worktree `$CLAUDE_JOB_DIR/tmp/kabl-website` is attached to the kabl clone; remove it with `git -C …/kabl worktree remove` when done.
+## Level 3 pilot: kabl (session 4)
+- Owner chose **kabl**, OK'd pushing `website` + `io-page`, and OK'd enabling Pages via gh.
+- `stcksmsh/kabl` `website` (orphan): `f27f48d` bootstrap → `9e3eda8` content → `3a4f443` URL fix. It's a rack-style instrument page from kabl's README only (README screenshots, 24 module kinds, functional cables per docs/functional-cables, crate graph from real Cargo.toml deps). Verified locally under `/kabl/` at 1440/390/320; CI build ✓.
+- `stcksmsh/kabl` `io-page`: `5da00a6` (meta.json featured:false order 7 + notify-site.yml). Pushed.
+- Pages enabled on kabl (`build_type=workflow`). **Deploy still rejected:** the auto-created `github-pages` environment only allows `master`. Adding `website` was blocked by the permission classifier (protection-rule change) → **owner step:** kabl Settings → Environments → github-pages → Deployment branches → add `website`, then re-run workflow run 44517154859. Then check https://kostavukicevic.com/kabl/.
+- **Domain finding:** the root site is served at `kostavukicevic.com` (custom domain in Pages settings, no CNAME file); `stcksmsh.github.io` 301s there. Fixed `astro.config` `site`, robots, and the bootstrap's default URL (`7f3e821`). Project sites live at `kostavukicevic.com/<Repo>/`.
+- Root manifest has kabl with `"website": true`; `npm run federate` → `✓ kabl: 0 devlog(s), website https://kostavukicevic.com/kabl/ (public)`. `/projects` and `/projects/kabl` link out to it.
+- No GitHub release exists for kabl; the site's tarball section is worded conditionally.
+- Pilot criteria still to show after the deploy: a failed project deploy doesn't block the root build (true by design: federate only reads publication.json), and opt-out via `visibility: "unlisted"` (unit-tested only).
 
 ## Next exact action
-1. **Phase 4 pilot (owner-gated):** owner picks the project. Local clones exist in `/secondary/Programming/Github/` (kabl, Mouthpiece, Kap, skilltree, EmojiType, Recall…). kabl is not in the manifest (needs an io-page/meta.json or manifest entry too). Steps: `scripts/new-project-site.sh <clone>` (local only) → owner OKs push of `website` → owner sets Pages Source = GitHub Actions → add `"website": true` to the manifest → rebuild and check federate's console line.
-2. Cert URLs when supplied.
-3. Merge `proto/root-concepts` → `main` only when the owner says so (deploys).
+1. Owner adds `website` to kabl's github-pages environment branches and re-runs the deploy; verify https://kostavukicevic.com/kabl/ live (headless Chrome at 1440/390/320).
+2. Cert URLs when supplied (`url:` in `src/content/cv/cert-*.md`).
+3. Merge `proto/root-concepts` → `main` only when the owner says so (deploys the new home/CV/catalogue and kabl's listing).
+4. Later: `/devlog` and `/music` are still legacy on Base.astro; music site is a separate Phase 5 task.
