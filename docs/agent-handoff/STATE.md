@@ -19,7 +19,7 @@
 | Clean layout (no visualizer/player/global CSS) | Done | `src/layouts/Profile.astro` |
 | Shared facts | Done | `src/data/profile.ts` (identity, CV collection loader, `domains` pins, `projectDomains` map, `toYear`) |
 | CV `/cv` | **Owner: final for now** ("perfect for a CV") | `src/pages/cv.astro`, datasheet style, A4 print = 2 pages |
-| Homepage `/` | **Board skin, owner chose it 2026-11-19.** Datasheet homepage deleted (in git history before `023f806`-ish; search log for `index.astro`) | `src/pages/index.astro` + routing/layout in `src/lib/board.ts` |
+| Homepage `/` | **Board skin, owner chose it 2026-11-19.** Datasheet homepage deleted (in git history at `dd0264d`) | `src/pages/index.astro` + routing/layout in `src/lib/board.ts` |
 | Skills | Grouped; optional `items` field added to the cv schema | `src/content/cv/skill-*.md` |
 | Level 3 publication arch (pilot) | Merged, untested against a real deploy | `scripts/publication.ts`, `scripts/federate.ts`, `scripts/new-project-site.sh`, `docs/project-repo-example/website/`, `src/lib/listing.ts`, AGENTS.md section |
 | Screenshots/videos | Committed | `docs/agent-handoff/shots-final/` (datasheet), `shots-next/` (board), `proto-shots/` (original A/B/C concepts) |
