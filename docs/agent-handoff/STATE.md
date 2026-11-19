@@ -2,7 +2,7 @@
 
 > Restart checkpoint. Update before clearing/restarting the overseer. Concise and factual. Verify against `git log` / the build before trusting it.
 
-## Current status (2026-11-19, end of session 5)
+## Current status (2026-11-19, session 6)
 
 - **Repo:** `stcksmsh/stcksmsh.github.io` (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`, deploys to GitHub Pages on push to `main`).
 - **Branch:** everything is merged to `main` (`50d56e9`) and **live** at https://kostavukicevic.com. `proto/root-concepts` = `main` (kept, pushed). New work: feature branch off `main`; pushing `main` deploys, which needs the owner's OK.
@@ -97,7 +97,16 @@
 - Live check on https://kostavukicevic.com (1440 + 390): `/` (10 parts), `/cv/`, `/projects/`, `/projects/mouthpiece/`, `/projects/kabl/`, `/devlog/`, `/music/` all 200, with no overflow or console errors. Unknown paths return the datasheet 404 (status 404). `/sitemap.xml` and `/og.png` are served.
 - Work continues on `main` from here (proto branch fast-forwarded to it). Minor: `public/og.png` is a pre-kabl board screenshot (9 parts); regenerate with a viewport screenshot when convenient.
 
+## Session 6 (2026-11-19): Level 3 sites for aegis and EmojiType (owner asked)
+- Built with `scripts/new-project-site.sh`, then content commits. **Local only, nothing pushed.**
+  - `stcksmsh/aegis` `website`: `f55e419` bootstrap → `3866d5e` content. Local clone `../aegis` (new clone this session), worktree `../aegis-website`. Dark page in the app's look: drag-to-port USB plug-in simulation (encrypt/copy/verify, changed-files-only re-backup, unplug mid-backup, snapshot history, "look inside the drive" = restic repo layout), a Web Crypto encryption illustration (captioned: AES-GCM/PBKDF2 here, restic uses AES-256-CTR+Poly1305/scrypt), demo.mp4 + screenshots, features/security from README + SECURITY.md, download table that fills real asset links from the GitHub releases API. **aegis has no GitHub release yet**: the page says so and points to build-from-source.
+  - `stcksmsh/EmojiType` `website`: `bb742d9` bootstrap → `cec12b7` content. Worktree `../EmojiType-website`. Light page: animated hero field, playground that re-implements content.js rules (delimiter replace, Tab/arrow/Enter suggestions, Backspace → keyword, delimiter switch, emoji burst), clickable default dictionary (27) + add-your-own, popup tabs, install (load unpacked; v3.0 release has no assets), privacy + permissions from manifest.
+- Verified locally (vite preview under each base path): 1440/390/320 + reduced motion, no overflow/console errors; Playwright interaction scripts pass (drag + keyboard plug-in, unplug, guess passphrase; EmojiType replace/Tab/Backspace/arrows/delimiter/chips/custom entry/tabs). Scripts: `$CLAUDE_JOB_DIR/tmp/pw/` (may be gone).
+- URLs will be `https://kostavukicevic.com/aegis/` and `https://kostavukicevic.com/EmojiType/` (case-sensitive path).
+
 ## Next exact action
+0. **Owner OK needed** to: push `website` on aegis and EmojiType; enable Pages (`build_type=workflow`) via gh; owner adds `website` to each repo's github-pages environment deployment branches (the classifier blocked this for kabl); then add `"website": true` to both manifest entries on `main` (deploys root). Then live-check both sites at 1440/390/320.
+
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
 3. Optional: regenerate `public/og.png` (viewport screenshot, not fullPage). Legacy `/devlog` and `/music` redesign is a later task (Phase 5 for music).
