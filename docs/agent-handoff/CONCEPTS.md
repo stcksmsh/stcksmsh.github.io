@@ -13,7 +13,7 @@ All three render the same data (`src/data/profile.ts`: CV collection + featured 
 | Risk | Intro + route compete for attention | Theorem/Lemma framing can read as too cute; serif-only | Can look cold or "corporate" if pushed further; joke density (part no., "in production") needs restraint |
 | Build cost to production | Low | Low | Low–medium (table/print variants) |
 
-**Recommendation (for you to decide, not decided):** go with **C**, borrowing B's results-table typography for the maths section. C answers the brief's six recruiter questions fastest and still has the strongest single visual idea. A is the safe fallback.
+**Decision (owner, 2026-11-20): C.** Promoted to `/` and `/cv`; prototypes removed. Original recommendation: go with **C**, borrowing B's results-table typography for the maths section. C answers the brief's six recruiter questions fastest and still has the strongest single visual idea. A is the safe fallback.
 
 ## Verification (2026-11-20, production build via `astro preview`)
 

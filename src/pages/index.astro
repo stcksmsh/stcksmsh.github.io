@@ -1,382 +1,248 @@
 ---
-import Base from "../layouts/Base.astro";
-import { getCollection } from "astro:content";
-import { musicEmbedSrc } from "../lib/embeds";
-import { padForTicker } from "../lib/ticker";
-
-// Federated projects — may be empty on first run before manifest repos exist.
-let projects: any[] = [];
-try {
-  const all = await getCollection("projects");
-  projects = all
-    .map((p) => p.data)
-    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
-} catch {}
-
-// Home shows a condensed teaser — full catalog lives on /music.
-const TEASER_COUNT = 6;
-let tracks: any[] = [];
-try {
-  const all = await getCollection("music");
-  tracks = all
-    .map((t) => ({ id: t.id, ...t.data }))
-    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
-    .slice(0, TEASER_COUNT);
-} catch {}
-
-// Cross-project devlog teaser — same federated data /devlog uses, condensed.
-const DEVLOG_TEASER_COUNT = 6;
-let devlogTeaser: any[] = [];
-try {
-  const projectsByslug = new Map(projects.map((p) => [p.slug, p]));
-  const allDevlogs = await getCollection("devlogs", (e: any) => !e.data.draft);
-  devlogTeaser = allDevlogs
-    .map((entry: any) => {
-      const project = projectsByslug.get(entry.data.project);
-      const anchor = entry.id.replace(/\.md$/, "").replace(/\//g, "--");
-      const excerpt = entry.body
-        .replace(/^#.*$/m, "")
-        .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-        .replace(/[#*`_>]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 120);
-      return {
-        id: entry.id,
-        title: entry.data.title,
-        date: entry.data.date,
-        excerpt: excerpt.length === 120 ? excerpt + "…" : excerpt,
-        href: `/projects/${entry.data.project}#${anchor}`,
-        projectTitle: project?.title ?? entry.data.project,
-        accent: project?.accent,
-      };
-    })
-    .sort((a: any, b: any) => b.date.valueOf() - a.date.valueOf())
-    .slice(0, DEVLOG_TEASER_COUNT);
-} catch {}
-
-const nav = [
-  ["projects", "/#work"],
-  ["music", "/#sound"],
-  ["devlog", "/#devlog"],
-  ["cv", "/cv"],
-];
+// Root homepage — "Datasheet" direction (owner-approved concept C, 2026-11-20):
+// the profile laid out as an engineering component datasheet.
+// Subject link: automotive embedded/Android engineering; brief's C4 "technical manual" reference.
+// Career = revision history, olympiads = characterisation data, projects = application notes.
+import Profile from "../layouts/Profile.astro";
+import { identity as id, loadProfile } from "../data/profile";
+const c = await loadProfile();
+const cv = "/cv";
+const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
+const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
+const firstYear = yearOf(c.experience.at(-1)?.start);
+// Revisions: oldest role = Rev A, current role = highest letter.
+const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i);
 ---
-<Base title="Kosta Vukićević">
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
+<Profile title={id.name} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <div class="maker"><span class="logo" aria-hidden="true">KV</span><span>{id.location}</span></div>
+      <nav aria-label="Primary" class="mono">
+        <a href="#rev">Revision history</a>
+        <a href="#app">Applications</a>
+        <a href={cv} class="hl">CV ↓</a>
+        <a href={`mailto:${id.email}`} class="hl">Contact</a>
+      </nav>
+    </header>
 
-  <header class="hero">
-    <div class="hero-scrim"></div>
-    <div class="shell hero-inner">
-      <div class="hero-copy">
-        <span class="eyebrow coord">SOFTWARE / SYSTEMS / SOUND</span>
-        <h1>BUILD<br/><span class="thin">THE</span> <em>SIGNAL</em></h1>
-        <p class="lede">
-          I write <b>Kotlin for cars</b> for a living. In my own time I
-          <b>make music</b>, <b>break things on purpose</b>, and once helped
-          a couple hundred people <b>ride the bus for free</b>. Based in
-          Belgrade.
-        </p>
-        <div class="status">
-          <span>LOC: <b>BELGRADE</b></span>
-          <span>ROLE: <b>SWE · ANDROID</b></span>
-          <span>STACK: <b>KOTLIN / GO / REACT</b></span>
-          <span class="live">{projects.length} PROJECTS ACTIVE</span>
+    <main id="main">
+      <section class="title" aria-labelledby="name">
+        <h1 id="name">{id.name}</h1>
+        <p class="sub">{id.role} — {id.employer}</p>
+        <div class="pn mono">
+          <span>Part no.</span><b>KV-SWE-II</b>
+          <span>Status</span><b class="ok">In production</b>
+          {firstYear && <><span>Since</span><b>{firstYear}</b></>}
         </div>
-      </div>
-    </div>
-  </header>
+        <div class="rule" aria-hidden="true"></div>
+      </section>
 
-  <section class="shell" id="work" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">01 / PROJECTS</span>
-      <h2><a href="/projects">Selected builds <span class="arrow">→</span></a></h2>
-    </div>
+      <section class="cols">
+        <div class="block">
+          <h2><span class="n mono">1</span>Features</h2>
+          {/* Hand-condensed from: experience-1..4 (titles, orgs, intern body para 2), award-1..5, project list.
+              Re-check against src/content/cv when any of those change. */}
+          <ul class="feat">
+            <li>Production Android engineering for vehicle infotainment{firstYear && `, since ${firstYear}`}</li>
+            <li>Kotlin-first; shipped customer-facing navigation features</li>
+            <li>Mathematics olympiad background: IMO, BMO, IOI</li>
+            <li>Independent builder: tools, Android apps, audio and web experiments</li>
+          </ul>
+        </div>
+        <div class="block">
+          <h2><span class="n mono">2</span>Description</h2>
+          <p class="desc">{id.intro.join(" ")}</p>
+          <div class="cta">
+            <a href={cv} class="btn">Download full CV</a>
+            <a href={`mailto:${id.email}`} class="btn ghost">Email</a>
+          </div>
+        </div>
+        <figure class="block fig">
+          <figcaption class="mono">Figure 1. Functional block diagram</figcaption>
+          <svg viewBox="0 0 320 210" role="img" aria-labelledby="fig1">
+            <title id="fig1">Block diagram: mathematics and computer science feed into Android engineering at {id.employer}, which outputs shipped vehicle features; side projects branch off.</title>
+            <g class="blk"><rect x="8" y="20" width="92" height="44" /><text x="54" y="47">MATH</text></g>
+            <g class="blk"><rect x="8" y="140" width="92" height="44" /><text x="54" y="167">CS / ETF</text></g>
+            <g class="blk core"><rect x="128" y="70" width="104" height="64" /><text x="180" y="99">ANDROID</text><text x="180" y="117" class="small">KOTLIN · AUTO</text></g>
+            <g class="blk"><rect x="252" y="80" width="60" height="44" /><text x="282" y="107">OUT</text></g>
+            <path d="M100 42 H114 V92 H128 M100 162 H114 V112 H128 M232 102 H252" class="wire" />
+            <path d="M180 134 V190 H300" class="wire dash" />
+            <text x="312" y="204" class="small" style="text-anchor:end">side projects</text>
+          </svg>
+        </figure>
+      </section>
 
-    {projects.length === 0 ? (
-      <p class="empty coord">
-        // no federated projects yet — push an <code>io-page</code> branch
-        with a <code>meta.json</code> to any repo in the manifest
-      </p>
-    ) : (
-      <ul class="carousel cards">
-        {projects.map((p) => (
-          <li
-            class="card"
-            style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
-          >
-            <a href={`/projects/${p.slug}`}>
-              <span class="card-status coord">{p.status}</span>
-              <h3>{p.title}</h3>
-              <p class="card-tag">{p.tagline}</p>
-              <div class="ticker-viewport" aria-hidden="true">
-                <ul class="stack">
-                  {[...padForTicker(p.stack.slice(0, 4)), ...padForTicker(p.stack.slice(0, 4))].map((s: string | null) =>
-                    s === null ? <li class="ticker-gap" /> : <li>{s}</li>
-                  )}
-                </ul>
-              </div>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
+      <section id="rev" class="block wide" aria-labelledby="rev-h">
+        <h2 id="rev-h"><span class="n mono">3</span>Revision history</h2>
+        <div class="tbl">
+          <table>
+            <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Role</th><th scope="col">Organisation</th><th scope="col">Notes</th></tr></thead>
+            <tbody>
+              {c.experience.map((e, i) => (
+                <tr class={i === 0 ? "cur" : ""}>
+                  <td class="mono">{rev(i)}</td>
+                  <td class="mono nowrap">{range(e.start, e.end)}</td>
+                  <th scope="row">{e.title}</th>
+                  <td>{e.org}</td>
+                  <td class="notes">{e.Body ? <details><summary>Read<span class="sr-only"> notes: {e.title}</span></summary><e.Body /></details> : "—"}</td>
+                </tr>
+              ))}
+              {c.education.length > 0 && <tr class="sep"><th colspan="5" scope="colgroup">Education</th></tr>}
+              {c.education.map((e) => (
+                <tr class="edu">
+                  <td class="mono">—</td>
+                  <td class="mono nowrap">{range(e.start, e.end)}</td>
+                  <th scope="row">{e.title}</th>
+                  <td>{e.org}</td>
+                  <td>—</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-  <section class="shell" id="sound" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">02 / SOUND</span>
-      <h2><a href="/music">Selected sounds <span class="arrow">→</span></a></h2>
-    </div>
+      <section class="cols two">
+        <div class="block" aria-labelledby="char-h">
+          <h2 id="char-h"><span class="n mono">4</span>Characterisation data</h2>
+          <table class="kv">
+            <caption class="mono">Table 4-1. Competition results</caption>
+            <tbody>
+              {c.awards.map((a) => (
+                <tr><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div class="block" aria-labelledby="spec-h">
+          <h2 id="spec-h"><span class="n mono">5</span>Specifications</h2>
+          <dl class="spec">
+            <dt>Skills</dt><dd>{c.skills.map((x) => x.title).join(", ")}</dd>
+            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join("; ")}</dd>
+            <dt>Location</dt><dd>{id.location}</dd>
+          </dl>
+        </div>
+      </section>
 
-    {tracks.length === 0 ? (
-      <p class="empty coord">
-        // no tracks yet — add entries to <code>src/content/music/*.json</code>
-      </p>
-    ) : (
-      <ul class="carousel tracks">
-        {tracks.map((t) => (
-          <li
-            class="track"
-            style={t.accent ? `--accent-l:${t.accent[0]};--accent-c:${t.accent[1]};--accent-h:${t.accent[2]};` : ""}
-          >
-            <div class="track-meta coord">
-              <span>{t.source}</span>
-              {t.year && <span>{t.year}</span>}
-            </div>
-            <h3>{t.title}</h3>
-            {t.source === "soundcloud" ? (
-              <button
-                type="button"
-                class="track-play"
-                data-track={JSON.stringify({
-                  slug: t.id, title: t.title, embedId: t.embedId, accent: t.accent, envelope: t.envelope,
-                })}
-              >
-                <span class="track-play-icon">▶</span>
-                <span>Play{t.envelope ? " — reactive" : ""}</span>
-              </button>
-            ) : (
-              <div class="track-embed">
-                <iframe
-                  loading="lazy"
-                  width="100%"
-                  height="300"
-                  seamless
-                  title={t.title}
-                  src={musicEmbedSrc(t)}
-                />
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
+      {c.projects.length > 0 && (
+        <section id="app" class="block wide" aria-labelledby="app-h">
+          <h2 id="app-h"><span class="n mono">6</span>Application notes — selected work</h2>
+          <ol class="apps">
+            {c.projects.map((p, i) => (
+              <li>
+                <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
+                <a href={`/projects/${p.slug}`}><b>{p.title}</b></a>
+                <span class="tag">{p.tagline}</span>
+                <span class="mono st">{p.stack.join(" · ")}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
-  <section class="shell" id="devlog" style="margin-top: 5rem;">
-    <div class="section-head">
-      <span class="coord">03 / DEVLOG</span>
-      <h2><a href="/devlog">What's shipping <span class="arrow">→</span></a></h2>
-    </div>
+      <section class="block wide order" aria-labelledby="ord-h">
+        <h2 id="ord-h"><span class="n mono">7</span>Ordering information</h2>
+        <ul class="mono">
+          <li><span>Email</span><a href={`mailto:${id.email}`}>{id.email}</a></li>
+          <li><span>LinkedIn</span><a href={id.linkedin}>kostavukicevic</a></li>
+          <li><span>GitHub</span><a href={id.github}>stcksmsh</a></li>
+          <li><span>CV</span><a href={cv}>/cv — printable</a></li>
+        </ul>
+      </section>
+    </main>
+    <footer class="foot mono"><span>{id.name} · <a href="/projects">All projects</a> · <a href="/devlog">Devlog</a> · <a href="/music">Music</a></span><span>KV-SWE-II{c.experience.length > 0 && ` · Rev ${rev(0)}`}</span></footer>
+  </div>
+</Profile>
 
-    {devlogTeaser.length === 0 ? (
-      <p class="empty coord">// no devlog entries yet</p>
-    ) : (
-      <ul class="carousel devlog-teaser">
-        {devlogTeaser.map((e) => (
-          <li
-            class="dt-entry"
-            style={e.accent ? `--accent-l:${e.accent[0]};--accent-c:${e.accent[1]};--accent-h:${e.accent[2]};` : ""}
-          >
-            <a href={e.href}>
-              <div class="dt-meta coord">
-                <span>{e.projectTitle}</span>
-                <time datetime={e.date.toISOString()}>{e.date.toISOString().slice(0, 10)}</time>
-              </div>
-              <h3>{e.title}</h3>
-              <p class="dt-excerpt">{e.excerpt}</p>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
-</Base>
+<style is:global>
+  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --line: #111; --hi: #ffd400; --blue: #0b4fb3; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; font-variation-settings: "wdth" 100; }
+  a { color: var(--blue); }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .skip { position: absolute; left: -999px; } .skip:focus { left: 16px; top: 8px; background: var(--ink); color: #fff; padding: 6px 10px; z-index: 9; }
 
-<style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
+  .sheet { max-width: 1180px; margin: clamp(0px, 3vw, 40px) auto; background: var(--paper); border: 2px solid var(--line); box-shadow: 10px 10px 0 var(--ink); }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 20px; border-bottom: 2px solid var(--line); flex-wrap: wrap; }
+  .maker { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; font-variation-settings: "wdth" 125; letter-spacing: .04em; }
+  .top nav { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; }
+  .top nav a { color: var(--ink); text-decoration: none; }
+  .top nav a.hl { background: var(--hi); padding: 2px 8px; font-weight: 600; }
+
+  .title { padding: clamp(28px, 6vw, 72px) clamp(16px, 4vw, 40px) 0; position: relative; }
+  .pn { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 13px; position: absolute; right: clamp(16px, 4vw, 40px); top: clamp(28px, 6vw, 72px); border: 2px solid var(--line); padding: 8px 12px; }
+  .pn span { color: var(--dim); } .pn .ok { background: var(--hi); padding: 0 4px; }
+  h1 { font-size: clamp(52px, 10.5vw, 148px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.01em; margin: 0; max-width: 9ch; }
+  .sub { font-size: clamp(18px, 2.2vw, 26px); font-weight: 600; font-variation-settings: "wdth" 85; margin: 14px 0 0; }
+  .rule { height: 14px; margin: 26px 0 0; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10px); border-bottom: 2px solid var(--line); }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr 1.15fr; border-bottom: 2px solid var(--line); }
+  .cols.two { grid-template-columns: 1fr 1fr; }
+  .cols > .block + .block { border-left: 2px solid var(--line); }
+  .block { padding: 22px clamp(16px, 3vw, 28px) 26px; margin: 0; }
+  .wide { border-bottom: 2px solid var(--line); }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 14px; display: flex; gap: 10px; align-items: baseline; }
+  .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }
+  .feat { margin: 0; padding-left: 1.1em; } .feat li { margin-bottom: 8px; } .feat li::marker { content: "■  "; font-size: .7em; }
+  .desc { margin: 0 0 18px; font-size: 17px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { background: var(--ink); color: #fff; padding: 9px 16px; text-decoration: none; font-weight: 700; }
+  .btn.ghost { background: var(--hi); color: var(--ink); }
+  .fig figcaption { font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+  .fig svg { width: 100%; height: auto; }
+  .blk rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+  .blk.core rect { fill: var(--hi); }
+  .blk text, svg .small { font: 700 13px "Archivo", sans-serif; text-anchor: middle; fill: var(--ink); }
+  svg .small { font-weight: 500; font-size: 10px; }
+  .wire { fill: none; stroke: var(--ink); stroke-width: 2; }
+  .dash { stroke-dasharray: 4 4; }
+
+  .tbl { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; }
+  #rev th, #rev td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid #bbb; vertical-align: top; }
+  #rev thead th { border-bottom: 2px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  #rev tbody th { font-weight: 700; }
+  #rev tr.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
+  #rev tr.edu td, #rev tr.edu th { color: var(--dim); }
+  #rev tr.sep th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding-top: 16px; border-bottom: 2px solid var(--line); }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .nowrap { white-space: nowrap; font-size: 13px; }
+  .notes details { max-width: 34em; } .notes summary { cursor: pointer; color: var(--blue); } .notes p { margin: 8px 0; }
+  .kv caption { text-align: left; font-size: 12px; color: var(--dim); padding-bottom: 6px; }
+  .kv td, .kv th { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid #bbb; font-weight: 600; }
+  .kv td { font-weight: 400; width: 4.5em; }
+  .spec { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec dt { font-weight: 700; } .spec dd { margin: 0; }
+
+  .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+  .apps li { display: grid; grid-template-columns: 4.5em 1fr; gap: 2px 10px; padding: 12px 0; border-bottom: 1px solid #bbb; }
+  .an { grid-row: span 3; font-size: 12px; color: var(--dim); padding-top: 3px; }
+  .apps a { color: var(--ink); font-size: 18px; } .apps a:hover { color: var(--blue); }
+  .tag { font-size: 15px; } .st { font-size: 11px; color: var(--dim); }
+
+  .order ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .order li { border: 2px solid var(--line); padding: 10px 12px; display: grid; gap: 4px; font-size: 14px; overflow-wrap: anywhere; }
+  .order li span { font-size: 11px; color: var(--dim); text-transform: uppercase; }
+  .foot { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; padding: 10px 20px; font-size: 12px; color: var(--dim); }
+
+  @media (max-width: 900px) {
+    .cols, .cols.two { grid-template-columns: 1fr; }
+    .cols > .block + .block { border-left: 0; border-top: 2px solid var(--line); }
+    .apps { grid-template-columns: 1fr; }
+    .order ul { grid-template-columns: 1fr 1fr; }
+    .pn { position: static; display: inline-grid; margin-top: 18px; }
   }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
+  @media (max-width: 560px) {
+    .sheet { box-shadow: none; border-width: 0 0 2px; }
+    .top nav a:not(.hl) { display: none; }
+    #rev thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    #rev tr.sep { display: block; }
+    #rev tr { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 10px 0; border-bottom: 1px solid #bbb; }
+    #rev th, #rev td { border: 0; padding: 0; }
+    #rev td:first-child { grid-row: span 4; }
+    .order ul { grid-template-columns: 1fr; }
   }
-
-  /* canvas.sinteza-bg itself is styled in global.css — it's mounted once,
-     site-wide, in Base.astro now, not scoped to this page. The hero here
-     only adds its own local scrim for headline legibility. */
-  .hero {
-    position: relative;
-    min-height: 82vh;
-    display: flex;
-    align-items: center;
-  }
-  .hero-scrim {
-    position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    /* Strong, wide coverage across the whole text column (headline runs
-       to ~50% width at the hero's max font size) fading out well past it,
-       so the beam/blob still dominate the right side of the viewport
-       without crossing directly through the letterforms. */
-    background: linear-gradient(90deg,
-      color-mix(in oklch, var(--bg) 97%, transparent) 0%,
-      color-mix(in oklch, var(--bg) 94%, transparent) 48%,
-      color-mix(in oklch, var(--bg) 65%, transparent) 65%,
-      transparent 86%);
-    /* Feather top/bottom so the scrim fades into the next section's bare
-       artwork instead of ending on a flat opaque band that seams against
-       it (same treatment as .project-hero-scrim). */
-    mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
-    -webkit-mask-image: linear-gradient(180deg, transparent 0%, black 10%, black 82%, transparent 100%);
-  }
-  .hero-inner { position: relative; z-index: 2; width: 100%; padding-block: clamp(2rem, 6vw, 4rem); }
-  .hero-copy { margin-top: 0; }
-  .eyebrow {
-    display: flex; align-items: center; flex-wrap: wrap; row-gap: 0.4rem; gap: 0.9rem;
-    color: var(--accent); letter-spacing: 0.22em; margin-bottom: 1.4rem;
-  }
-  .eyebrow::before { content: ""; width: 2.2rem; height: 2px; background: var(--accent); flex-shrink: 0; }
-  .hero-copy h1 {
-    font-size: var(--hero); line-height: 0.92; letter-spacing: -0.02em;
-    text-transform: uppercase; margin: 0.5rem 0 1.5rem;
-  }
-  .hero-copy h1 .thin { font-weight: 400; color: var(--ink-dim); }
-  .hero-copy h1 em { font-style: normal; color: var(--accent); }
-  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); margin-bottom: 1.6rem; }
-  .lede b { color: var(--ink); font-weight: 500; }
-
-  .status {
-    display: flex; flex-wrap: wrap; gap: 0; border: var(--border);
-    border-radius: var(--radius-panel); overflow: hidden;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    font-family: var(--font-mono); font-size: var(--step--1); width: fit-content; max-width: 100%;
-  }
-  .status span { padding: 0.6rem 1rem; border-right: var(--border); color: var(--ink-dim); letter-spacing: 0.06em; white-space: nowrap; }
-  .status span:last-child { border-right: 0; }
-  .status span b { color: var(--accent); font-weight: 500; }
-  .status .live { color: var(--accent-cyan); }
-  .status .live::before { content: "● "; }
-
-  .section-head { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
-  .section-head h2 { font-size: var(--step-2); }
-  .section-head h2 a { color: var(--ink); text-decoration: none; }
-  .section-head h2 a:hover { color: var(--accent); }
-  .section-head h2 .arrow { color: var(--accent); }
-
-  /* Horizontal scroll-snap carousel — shared shape for projects/music/devlog.
-     Each section's own class (.cards/.tracks/.devlog-teaser) sets item width. */
-  .carousel {
-    display: flex; gap: var(--gap); list-style: none;
-    overflow-x: auto; scroll-snap-type: x mandatory;
-    padding-bottom: 0.75rem; margin: 0 calc(var(--gap) * -1);
-    padding-inline: var(--gap);
-    scrollbar-width: thin; scrollbar-color: var(--hairline) transparent;
-  }
-  .carousel > li { scroll-snap-align: start; flex-shrink: 0; }
-
-  .cards > li { width: min(320px, 85vw); }
-  .card {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
-  }
-  .card:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
-  .card a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
-  .card a:hover { text-decoration: none; }
-  .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
-  .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
-  .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
-  /* Ticker scroll mechanics live in global.css; this just keeps the pill look. */
-  .stack { list-style: none; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
-
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
-  .empty code { color: var(--accent); }
-
-  .tracks > li { width: min(280px, 85vw); }
-  .track {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    padding: 1.5rem;
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
-  }
-  .track:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
-  .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
-  .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
-  .track-embed { border-radius: var(--radius); overflow: hidden; }
-  .track-embed iframe { display: block; border: 0; }
-  .track-play {
-    display: flex; align-items: center; gap: 0.6rem; width: 100%;
-    background: none; border: var(--border); border-radius: var(--radius);
-    color: var(--ink); font-family: var(--font-mono); font-size: var(--step--1);
-    padding: 0.7rem 1rem; cursor: pointer; letter-spacing: 0.04em;
-    transition: border-color 0.15s var(--ease-scope), color 0.15s var(--ease-scope);
-  }
-  .track-play:hover { border-color: var(--accent); color: var(--accent); }
-  .track-play-icon { color: var(--accent); }
-
-  .devlog-teaser > li { width: min(300px, 85vw); }
-  .dt-entry {
-    height: 100%;
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
-  }
-  .dt-entry:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
-  .dt-entry a { display: block; height: 100%; padding: 1.5rem; color: inherit; }
-  .dt-entry a:hover { text-decoration: none; }
-  .dt-meta { display: flex; justify-content: space-between; gap: 0.75rem; color: var(--accent); margin-bottom: 0.6rem; }
-  .dt-entry h3 { font-size: var(--step-0); margin-bottom: 0.5rem; }
-  .dt-excerpt { color: var(--ink-dim); font-size: var(--step--1); }
 </style>
-
-<script>
-  import { requestPlay } from "../lib/player-bus";
-  // View Transitions re-run page scripts on every client-side navigation —
-  // guard against stacking duplicate listeners on repeat visits home.
-  if (!(window as any).__trackPlayBound) {
-    (window as any).__trackPlayBound = true;
-    document.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest(".track-play");
-      if (!btn) return;
-      const data = JSON.parse(btn.getAttribute("data-track")!);
-      requestPlay(data);
-    });
-  }
-</script>

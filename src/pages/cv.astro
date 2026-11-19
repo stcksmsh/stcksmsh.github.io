@@ -1,231 +1,113 @@
 ---
-import Base from "../layouts/Base.astro";
-import { getCollection, render } from "astro:content";
-
-const all = await getCollection("cv");
-const by = (section: string) =>
-  all.filter((e) => e.data.section === section).sort((a, b) => a.data.order - b.data.order);
-
-const experience = by("experience");
-const education = by("education");
-const skills = by("skills");
-const certifications = by("certifications");
-const awards = by("awards");
-
-const rendered = new Map();
-for (const entry of [...experience, ...education]) {
-  rendered.set(entry.id, (await render(entry)).Content);
-}
-
-const nav = [
-  ["projects", "/projects"],
-  ["music", "/music"],
-  ["devlog", "/devlog"],
-  ["cv", "/cv"],
-];
+// CV page in the "Datasheet" direction, sharing src/data/profile.ts with the homepage.
+import Profile from "../layouts/Profile.astro";
+import { identity as id, loadProfile } from "../data/profile";
+const c = await loadProfile();
+const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
 ---
-<Base title="CV — Kosta Vukićević" description="Experience, education, and awards.">
-  <nav class="shell nav no-print">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
-
-  <div class="shell cv">
-    <header class="cv-head">
-      <div>
-        <span class="coord">// CV</span>
-        <h1>Kosta Vukićević</h1>
-        <p class="role">Android Software Engineer II @ Rivian and Volkswagen Group Technologies</p>
-        <p class="loc coord">Belgrade, Serbia</p>
-      </div>
-      <div class="contact">
-        <a href="mailto:vukicevickosta@gmail.com">vukicevickosta@gmail.com</a>
-        <a href="https://www.linkedin.com/in/kostavukicevic">linkedin.com/in/kostavukicevic</a>
-        <button class="print-btn no-print" onclick="window.print()" type="button">print / save PDF</button>
-      </div>
+<Profile title={`CV — ${id.name}`} description={`${id.role}, ${id.employer}. Experience, education and results.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top no-print">
+      <a href="/" class="logo" aria-label="Back to homepage">KV</a>
+      <button type="button" onclick="window.print()">Print / save PDF</button>
     </header>
+    <main id="main">
+      <header class="head">
+        <div>
+          <h1>{id.name}</h1>
+          <p class="sub">{id.role} — {id.employer}</p>
+        </div>
+        <dl class="contact mono">
+          <dt>Email</dt><dd><a href={`mailto:${id.email}`}>{id.email}</a></dd>
+          <dt>LinkedIn</dt><dd><a href={id.linkedin}>linkedin.com/in/kostavukicevic</a></dd>
+          <dt>GitHub</dt><dd><a href={id.github}>github.com/stcksmsh</a></dd>
+          <dt>Location</dt><dd>{id.location}</dd>
+        </dl>
+      </header>
 
-    <p class="summary">
-      Android Software Engineer with production experience in the automotive
-      industry (Rivian, Volkswagen Group Technologies), specializing in
-      Kotlin and systems-level app development. Background in competitive
-      programming (IMO, IOI honors) with a strong foundation in algorithms
-      and problem-solving.
-    </p>
-
-    <section class="cv-section">
-      <h2><span class="coord">01</span> Experience</h2>
-      <ul class="entries">
-        {experience.map((e) => (
-          <li class="entry">
-            <div class="entry-head">
-              <h3>{e.data.title}</h3>
-              <span class="dates coord">{e.data.start} – {e.data.end}</span>
-            </div>
-            {e.data.org && <p class="org">{e.data.org}</p>}
-            <div class="body">
-              {(() => { const C = rendered.get(e.id); return <C />; })()}
-            </div>
-          </li>
+      <section class="block" aria-labelledby="x-h">
+        <h2 id="x-h"><span class="n mono">1</span>Experience</h2>
+        {c.experience.map((e, i) => (
+          <article class={i === 0 ? "entry cur" : "entry"}>
+            <p class="when mono">{range(e.start, e.end)}</p>
+            <div><h3>{e.title}</h3><p class="org">{e.org}</p>{e.Body && <div class="body"><e.Body /></div>}</div>
+          </article>
         ))}
-      </ul>
-    </section>
-
-    <section class="cv-section">
-      <h2><span class="coord">02</span> Education</h2>
-      <ul class="entries">
-        {education.map((e) => (
-          <li class="entry">
-            <div class="entry-head">
-              <h3>{e.data.title}</h3>
-              <span class="dates coord">{e.data.start} – {e.data.end}</span>
-            </div>
-            {e.data.org && <p class="org">{e.data.org}</p>}
-          </li>
-        ))}
-      </ul>
-    </section>
-
-    <div class="cv-grid">
-      <section class="cv-section">
-        <h2><span class="coord">03</span> Skills</h2>
-        <ul class="chips">
-          {skills.map((e) => <li>{e.data.title}</li>)}
-        </ul>
       </section>
 
-      <section class="cv-section">
-        <h2><span class="coord">04</span> Certifications</h2>
-        <ul class="chips">
-          {certifications.map((e) => <li>{e.data.title}</li>)}
-        </ul>
-      </section>
-    </div>
-
-    <section class="cv-section">
-      <h2><span class="coord">05</span> Awards</h2>
-      <ul class="awards">
-        {awards.map((e) => (
-          <li>
-            <span class="award-title">{e.data.title}</span>
-            {e.data.org && <span class="award-org coord">{e.data.org}</span>}
-          </li>
+      <section class="block keep" aria-labelledby="e-h">
+        <h2 id="e-h"><span class="n mono">2</span>Education</h2>
+        {c.education.map((e) => (
+          <article class="entry"><p class="when mono">{range(e.start, e.end)}</p><div><h3>{e.title}</h3><p class="org">{e.org}</p></div></article>
         ))}
-      </ul>
-    </section>
+      </section>
+
+      <div class="cols keep">
+        <section class="block" aria-labelledby="r-h">
+          <h2 id="r-h"><span class="n mono">3</span>Competition results</h2>
+          <table class="kv"><tbody>{c.awards.map((a) => <tr><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>)}</tbody></table>
+        </section>
+        <section class="block" aria-labelledby="s-h">
+          <h2 id="s-h"><span class="n mono">4</span>Specifications</h2>
+          <dl class="spec">
+            <dt>Skills</dt><dd>{c.skills.map((x) => x.title).join(", ")}</dd>
+            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join("; ")}</dd>
+          </dl>
+        </section>
+      </div>
+    </main>
   </div>
-</Base>
+</Profile>
 
-<style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
+<style is:global>
+  :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #555; --hi: #ffd400; --blue: #0b4fb3; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.5 "Archivo", system-ui, sans-serif; }
+  a { color: var(--blue); }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .skip { position: absolute; left: -999px; } .skip:focus { left: 16px; top: 8px; background: var(--ink); color: #fff; padding: 6px 10px; z-index: 9; }
+  .sheet { max-width: 960px; margin: clamp(0px, 3vw, 40px) auto; background: var(--paper); border: 2px solid var(--ink); box-shadow: 10px 10px 0 var(--ink); }
+  .top { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 2px solid var(--ink); }
+  .logo { background: var(--ink); color: var(--hi); font-weight: 900; padding: 2px 8px; text-decoration: none; letter-spacing: .04em; }
+  .top button { font: 600 13px "JetBrains Mono", monospace; background: var(--hi); border: 0; padding: 4px 10px; cursor: pointer; }
+  .head { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 28px clamp(16px, 3vw, 28px); border-bottom: 2px solid var(--ink); }
+  h1 { font-size: clamp(40px, 7vw, 72px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; margin: 0; }
+  .sub { font-weight: 600; margin: 8px 0 0; font-size: 18px; }
+  .contact { display: grid; grid-template-columns: auto auto; gap: 2px 12px; margin: 0; font-size: 13px; align-self: end; }
+  .contact dt { color: var(--dim); } .contact dd { margin: 0; overflow-wrap: anywhere; min-width: 0; }
+  .block { padding: 20px clamp(16px, 3vw, 28px); border-bottom: 2px solid var(--ink); }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin: 0 0 12px; display: flex; gap: 10px; align-items: baseline; }
+  .n { background: var(--ink); color: #fff; padding: 0 6px; font-size: 12px; }
+  .entry { display: grid; grid-template-columns: 11.5rem 1fr; gap: 0 20px; padding: 10px 0; border-bottom: 1px solid #bbb; break-inside: avoid; }
+  .entry:last-child { border-bottom: 0; }
+  .entry.cur { background: linear-gradient(90deg, var(--hi), transparent 60%); }
+  .when { margin: 2px 0 0; font-size: 13px; }
+  h3 { font-size: 17px; margin: 0; }
+  .org { margin: 0; color: var(--dim); }
+  .body p { margin: 6px 0 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; }
+  .cols .block + .block { border-left: 2px solid var(--ink); }
+  .kv { border-collapse: collapse; width: 100%; }
+  .kv td, .kv th { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid #bbb; }
+  .kv td { width: 4.5em; }
+  .spec { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec dt { font-weight: 700; } .spec dd { margin: 0; }
+  @media (max-width: 640px) {
+    .sheet { box-shadow: none; border-width: 0 0 2px; }
+    .entry { grid-template-columns: 1fr; }
+    .cols { grid-template-columns: 1fr; } .cols .block + .block { border-left: 0; }
   }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
-
-  /* A dense reading route — the persistent visualizer background (mounted
-     site-wide in Base.astro) needs a stronger scrim here than the glass-
-     card treatment elsewhere gets, so a full resume's worth of text stays
-     comfortably legible (SINTEZA_VIZ.md §10: "readability scrims on
-     reading routes" is explicitly the host's job, not the package's). */
-  .cv {
-    max-width: 780px;
-    padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem) 4rem;
-    margin-block: clamp(1rem, 2vw, 2rem) 3rem;
-    position: relative; z-index: 1;
-    background: color-mix(in oklch, var(--bg) 82%, transparent);
-    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-
-  .cv-head {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    flex-wrap: wrap; gap: 1.5rem; border-bottom: var(--border); padding-bottom: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  .cv-head h1 { font-size: var(--step-3); margin: 0.4rem 0 0.5rem; }
-  .cv-head .role { color: var(--ink-dim); font-size: var(--step-0); max-width: var(--measure); }
-  .cv-head .loc { margin-top: 0.5rem; }
-  .contact { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; text-align: right; }
-  .contact a { color: var(--accent); font-size: var(--step--1); }
-  .print-btn {
-    margin-top: 0.5rem; background: none; border: var(--border); border-radius: var(--radius);
-    color: var(--ink-dim); font-family: var(--font-mono); font-size: var(--step--1);
-    padding: 0.4rem 0.9rem; cursor: pointer; letter-spacing: 0.05em;
-  }
-  .print-btn:hover { color: var(--accent); border-color: var(--accent); }
-
-  .summary { color: var(--ink); font-size: var(--step-1); max-width: var(--measure); margin-bottom: 2.5rem; }
-
-  .cv-section { margin-bottom: 2.5rem; }
-  .cv-section h2 {
-    display: flex; align-items: baseline; gap: 0.75rem; font-size: var(--step-1);
-    margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: var(--border);
-  }
-  .cv-section h2 .coord { color: var(--accent); }
-
-  .cv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
-  @media (max-width: 620px) { .cv-grid { grid-template-columns: 1fr; } }
-
-  .entries { list-style: none; display: flex; flex-direction: column; gap: 1.5rem; }
-  .entry-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem; }
-  .entry-head h3 { font-size: var(--step-0); }
-  .entry .dates { white-space: nowrap; }
-  .entry .org { color: var(--accent); font-size: var(--step--1); margin-top: 0.15rem; }
-  .entry .body { color: var(--ink-dim); font-size: var(--step-0); max-width: var(--measure); margin-top: 0.6rem; }
-  .entry .body :global(p) { margin-bottom: 0.8rem; }
-  .entry .body :global(p:last-child) { margin-bottom: 0; }
-
-  .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .chips li {
-    font-size: var(--step--1); color: var(--ink-dim); border: var(--border);
-    padding: 0.3rem 0.75rem; border-radius: var(--radius);
-  }
-
-  .awards { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
-  .awards li { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-  .award-title { color: var(--ink); font-size: var(--step-0); }
-  .award-org { white-space: nowrap; }
-
-  /* Print — this is the point of the page. Override the design tokens
-     themselves (not individual selectors) so every element that reads
-     var(--ink)/var(--accent)/etc. automatically flips to dark-on-light —
-     no whack-a-mole with elements that set their own explicit color. */
   @media print {
-    :global(:root) {
-      --bg: #fff; --bg-raise: #fff; --bg-sunken: #fff;
-      --ink: #111; --ink-dim: #333; --ink-faint: #555;
-      --accent: #000; --hairline: #ccc; --grid-line: transparent;
-    }
-    :global(body) { background-image: none !important; }
-    :global(.grain), :global(footer) { display: none !important; }
-    .no-print { display: none !important; }
-    .cv {
-      max-width: 100%; padding: 0; margin: 0;
-      border: 0; border-radius: 0; box-shadow: none;
-      background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none;
-    }
-    .entry, .cv-section { break-inside: avoid; }
-    a { text-decoration: none; }
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff; font-size: 10pt; }
+    .no-print, .skip { display: none !important; }
+    .sheet { margin: 0; box-shadow: none; max-width: none; }
+    h2 { break-after: avoid; }
+    .keep { break-inside: avoid; }
+    .block { padding: 12pt 14pt; } .head { padding: 16pt 14pt; } .entry { padding: 6pt 0; }
+    a { text-decoration: none; color: inherit; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>

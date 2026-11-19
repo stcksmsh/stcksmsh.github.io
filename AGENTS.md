@@ -6,7 +6,9 @@ Working notes for future agent sessions on this repo. State/context, not spec.
 
 Astro (static output, MPA) + React islands, deployed to GitHub Pages. `src/layouts/Base.astro` is the shared layout: mounts `SintezaBackground` (the persistent `sinteza-viz` WebGL canvas, site-wide fixed background) and `GlobalPlayer` (persistent bottom audio bar) once, both `transition:persist`'d so they survive Astro's View Transitions client-side navigation. Content is federated at build time from each project's own `io-page` git branch (`scripts/federate.ts`, driven by `projects.manifest.json`) — `src/content/projects/` and `src/content/devlogs/` are gitignored, regenerated on every build.
 
-**6 real pages**: `/` (home, teasers), `/projects`, `/projects/[slug]`, `/music`, `/devlog`, `/cv`. Each currently duplicates its own nav/card CSS in a page-scoped `<style>` block (a known wart, not yet worth the risk of consolidating).
+**6 real pages**: `/` (home), `/projects`, `/projects/[slug]`, `/music`, `/devlog`, `/cv`.
+
+**`/` and `/cv` are the new personal/professional experience** ("Datasheet" direction, owner-approved 2026-11-20; see `docs/agent-handoff/`). They use `src/layouts/Profile.astro`, which deliberately mounts nothing global: no `SintezaBackground`, no `GlobalPlayer`, no View Transitions, no `global.css`. Both read facts from `src/data/profile.ts` (identity + the `cv` collection; federated projects are optional, and the home renders without them). Keep them off `Base.astro`. The other four pages are legacy, still on `Base.astro`, and reachable from the home footer. Each legacy page currently duplicates its own nav/card CSS in a page-scoped `<style>` block (a known wart, not yet worth the risk of consolidating).
 
 ## The visualizer integration (`sinteza-viz` / `stcksmsh/hysteresis`)
 

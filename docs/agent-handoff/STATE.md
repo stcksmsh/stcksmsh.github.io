@@ -4,7 +4,7 @@
 
 ## Current status
 
-- **Phase:** Milestone 1 — concepts delivered, awaiting owner visual decision
+- **Phase:** Milestone 2: concept C promoted to `/` and `/cv` on the branch; awaiting owner review + merge
 - **Current milestone:** Baseline + factual content audit + three visual prototypes
 - **Repository:** `stcksmsh/stcksmsh.github.io` — verified (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`)
 - **Branch:** `proto/root-concepts` (local, not pushed), branched from `main` @ `dfe539b`
@@ -30,7 +30,6 @@
 - Use three comparable rendered root concepts as the next visual-design gate.
 
 ### OPEN
-- Exact root visual identity.
 - Portrait/photo or alternative visual anchor.
 - Exact prominence and presentation of mathematics background.
 - Any disputed/stale CV facts.
@@ -47,8 +46,8 @@
 | Three rendered root concepts | Complete + reviewed + fixed | `CONCEPTS.md`, `src/pages/proto/`, `proto-shots/` |
 | Clean layout + shared profile data | Complete (used by prototypes) | `src/layouts/Profile.astro`, `src/data/profile.ts` |
 | CV prototypes per concept + print check | Complete | `/proto/{a,b,c}-cv`, `proto-shots/*-cv.pdf` |
-| Owner visual decision | Not started | — |
-| Root + CV implementation | Not started | — |
+| Owner visual decision | **C — Datasheet** (2026-11-20, "C is ok") | — |
+| Root + CV implementation | Done on branch, not merged/deployed | `src/pages/index.astro`, `src/pages/cv.astro`, `shots-final/` |
 
 ## Active tasks / agents
 
@@ -77,5 +76,6 @@ For each active task record:
 
 ## Next exact action
 
-1. Owner picks A / B / C (or a combination) from `CONCEPTS.md`.
-2. Then milestone 2: promote the chosen concept + its CV onto `/` and `/cv` using the existing `Profile.astro` + `src/data/profile.ts`, keep the legacy pages reachable until replacements are approved, then delete `src/pages/proto/`. Keyboard/print/review checks are already done for the prototypes; redo them on the promoted pages.
+1. Owner reviews `/` and `/cv` locally (`npm run dev`) or via `shots-final/`, then approves merge of `proto/root-concepts` → `main` (merging deploys via Pages).
+2. Still-open owner questions: C's joke labels ("Ordering information", "In production"); 2-page vs 1-page CV; `public/demo/` commit; the old CV summary paragraph was dropped (it contained the overstated "IOI honors"). Supply a corrected one if wanted.
+3. Afterwards (brief Phase 2): polish, OG image, custom domain (owner-gated); later phases per brief §9.
