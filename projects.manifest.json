@@ -6,7 +6,8 @@
       "repo": "stcksmsh/Mouthpiece",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/deaf-composition",
