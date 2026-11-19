@@ -105,6 +105,11 @@
 - **LIVE 2026-11-19**: owner added `website` to both github-pages environments; reruns ✓. Live-checked at 1440/390/320 + reduced motion, all interaction scripts pass. Manifest has `"website": true` for aegis and EmojiType (pushed to `main`). Owner should try both sites once by hand (drag the drive; type in the playground).
 - URLs: `https://kostavukicevic.com/aegis/` and `https://kostavukicevic.com/EmojiType/` (case-sensitive path).
 
+## Session 6b: Mouthpiece Level 3 (owner: "Next is mouthpiece")
+- `stcksmsh/Mouthpiece` `website`: `e7c9eef` bootstrap → `2b52a6a` content, **pushed**; worktree `../Mouthpiece-website`. Ransom-note look: cut-out letter title (click re-cuts), "hear the name" button, demo = the 15 io-page entries with real clips (copied from io-page `page/assets/`), joined with the engine's 12 ms crossfade; tape canvas draws each fragment's real decoded waveform with cut marks + playhead; scraps (click = play one fragment alone, "cut from", source link, "natural run" badge); provenance JSON per render; tiers + corpus stats from io-page; manifest + setup from README. archive.org speaker values that are NASA uploader e-mail addresses display as "NASA audio".
+- Note: Mouthpiece's master README is behind its commits (roadmap still says v0.1); the site sticks to README + io-page facts. The owner's master working tree has uncommitted changes; untouched.
+- Pages enabled (workflow). Verified locally at 1440/390/320 + reduced motion; interaction script passes. Deploy run 44594422689 rejected: **owner adds `website` to Mouthpiece's github-pages deployment branches**, then rerun, live-check, add `"website": true` to the Mouthpiece manifest entry, push main.
+
 ## Next exact action
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
