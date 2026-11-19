@@ -86,7 +86,7 @@ export function buildBoard(L: Layout, domains: readonly { id: string; label: str
     const list = side === "b" ? placed.b : [...placed[side]].sort((a, b) => meanY(a) - meanY(b));
     list.forEach((p, i) => {
       const slot = L.slots[side][i];
-      if (!slot) return;
+      if (!slot) { console.warn(`[board] no free slot for ${p.ref} ${p.title}: add a slot to the layout`); return; }
       const { w, h } = L.part;
       const ds = p.domains.filter((d) => pinOf(d)).slice(0, L.maxPads ?? Infinity).sort((a, b) => (pinOf(a).side === pinOf(b).side ? pinOf(a).y - pinOf(b).y : pinOf(a).side === side ? -1 : 1));
       const pads = ds.map((domain, k) => {

@@ -84,6 +84,12 @@
 - No GitHub release exists for kabl; the site's tarball section is worded conditionally.
 - Pilot criteria still to show after the deploy: a failed project deploy doesn't block the root build (true by design: federate only reads publication.json), and opt-out via `visibility: "unlisted"` (unit-tested only).
 
+## Session 4 end (2026-11-19, owner shut laptop down mid-task)
+- kabl website: Morph now mixes per-step chance (rhythm crossfade, 'mix' row), crates clickable/pinnable with source links (`070e3cc`, live, verified). Sound live (`d112692`).
+- Owner: "publish website to the root page too" → kabl `io-page` meta.json `featured: true` pushed. Wide board grew to 11 slots (h 1290, +1 left, +1 right, bottom/fingers moved down) because 10 parts silently dropped Skilltree; `buildBoard` now warns on a dropped part. Committed, **not yet visually signed off**.
+- **OPEN BUG, investigate first:** on `/` the board traces (`.trace .cu`) render invisible in headless Chrome screenshots, even after the draw-in animation and under reduced motion, though computed style looks right (stroke #2a2a2a, dasharray 1 with pathLength=1, dashoffset 0). Earlier this session's og.png showed traces, so check whether something changed (try `git stash`/checkout `4b6e048` and compare; suspect `stroke-dasharray: 1` + `pathLength` rendering). Comparison screenshots: `$CLAUDE_JOB_DIR/tmp/kt-both.png` (may be gone).
+- `proto/root-concepts` pushed to origin (owner: "push everything"). Not merged to main.
+
 ## Next exact action
 1. (done) kabl site live.
 2. Cert URLs when supplied (`url:` in `src/content/cv/cert-*.md`).

@@ -39,13 +39,14 @@ const fingers = [
 ];
 
 const wide: Layout = {
-  w: 1600, h: 1120,
+  // 11 slots: 3 records (work, olympiads, ETF) + up to 8 featured projects.
+  w: 1600, h: 1290,
   chip: { x: 800, y: 560, w: 350, h: 300 },
-  slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }], b: [{ x: 470, y: 1000 }, { x: 1130, y: 1000 }] },
+  slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }, { x: 250, y: 1030 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }, { x: 1350, y: 1010 }], b: [{ x: 470, y: 1170 }, { x: 1130, y: 1170 }] },
   part: { w: 232, h: 96 },
   lanes: { l: [570, 390], r: [1030, 1210] },
   bottomLaneY: [790, 880],
-  fingers: { y: 1055, x0: 580, x1: 1020, h: 45, wire: true },
+  fingers: { y: 1225, x0: 580, x1: 1020, h: 45, wire: true },
 };
 const narrow: Layout = {
   w: 420, h: 330 + Math.ceil(parts.length / 2) * 150 + 140,
