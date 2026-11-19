@@ -11,6 +11,7 @@ interface Props {
 }
 const { title, description, fonts, noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL("/og.png", Astro.site);
 ---
 <!doctype html>
 <html lang="en">
@@ -24,8 +25,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Kosta Vukićević" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
     {noindex && <meta name="robots" content="noindex" />}
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap.xml" />
     {fonts && <link rel="preconnect" href="https://fonts.googleapis.com" />}
     {fonts && <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />}
     {fonts && <link rel="stylesheet" href={fonts} />}
