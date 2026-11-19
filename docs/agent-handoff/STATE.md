@@ -105,7 +105,7 @@
 - URLs will be `https://kostavukicevic.com/aegis/` and `https://kostavukicevic.com/EmojiType/` (case-sensitive path).
 
 ## Next exact action
-0. **Owner OK needed** to: push `website` on aegis and EmojiType; enable Pages (`build_type=workflow`) via gh; owner adds `website` to each repo's github-pages environment deployment branches (the classifier blocked this for kabl); then add `"website": true` to both manifest entries on `main` (deploys root). Then live-check both sites at 1440/390/320.
+0. **Pushed (owner OK'd "Do it")**: both `website` branches; aegis Pages enabled (workflow); EmojiType Pages switched legacy (old 2024 placeholder from `IOPage` branch, untouched) → workflow. Builds ✓, deploys rejected (aegis run 44587118926, EmojiType run 44587128050): **owner must add `website` to github-pages environment deployment branches in both repos** (classifier blocks it for us), then `gh run rerun <id>`, live-check, then the manifest step. Original plan: push `website` on aegis and EmojiType; enable Pages (`build_type=workflow`) via gh; owner adds `website` to each repo's github-pages environment deployment branches (the classifier blocked this for kabl); then add `"website": true` to both manifest entries on `main` (deploys root). Then live-check both sites at 1440/390/320.
 
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
