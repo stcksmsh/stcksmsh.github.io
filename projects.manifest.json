@@ -18,7 +18,8 @@
       "repo": "stcksmsh/aegis",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/skilltree",
@@ -30,7 +31,8 @@
       "repo": "stcksmsh/EmojiType",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/Kap",
