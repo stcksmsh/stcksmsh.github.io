@@ -52,7 +52,7 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
           <h2 id="s-h"><span class="n mono">4</span>Skills</h2>
           <dl class="spec">
             {c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.length ? g.items.join(" · ") : g.title}</dd></>)}
-            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join(" · ")}</dd>
+            <dt>Certifications</dt><dd>{c.certifications.map((x, i) => <>{i > 0 && " · "}{x.url ? <a href={x.url} rel="noopener">{x.title}</a> : x.title}</>)}</dd>
           </dl>
         </section>
       </div>

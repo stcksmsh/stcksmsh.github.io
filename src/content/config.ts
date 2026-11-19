@@ -46,6 +46,8 @@ const cv = defineCollection({
     order: z.number().default(0),
     // skills section only: the entries in this group (title = group name)
     items: z.array(z.string()).optional(),
+    // certifications: credential/verification link (as on LinkedIn)
+    url: z.string().url().optional(),
   }),
 });
 
