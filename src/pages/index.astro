@@ -103,6 +103,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
             <div class="chip" aria-hidden="true"><span class="notch"></span><b>KV</b><span class="mono">SWE-II</span></div>
           </div>
           <p class="chip-read mono" aria-live="polite">8 pins, one engineer. Nothing here is single-purpose.</p>
+          <ol class="trace-out mono" hidden></ol>
         </figure>
       </section>
 
@@ -113,7 +114,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
             <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Role</th><th scope="col">Organisation</th><th scope="col">Notes</th></tr></thead>
             <tbody>
               {c.experience.map((e, i) => (
-                <tr class={i === 0 ? "cur" : ""} data-domains={isAuto(e.org) ? "auto" : ""}>
+                <tr id={`rev-${rev(i).toLowerCase()}`} class={i === 0 ? "cur" : ""} data-domains={isAuto(e.org) ? "auto android" : ""} data-label={`Rev ${rev(i)} · ${e.title}`}>
                   <td class="mono">{rev(i)}</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
@@ -122,8 +123,8 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
                 </tr>
               ))}
               {c.education.length > 0 && <tr class="sep"><th colspan="5" scope="colgroup">Education</th></tr>}
-              {c.education.map((e) => (
-                <tr class="edu" data-domains="math">
+              {c.education.map((e, i) => (
+                <tr id={`edu-${i}`} class="edu" data-domains="math" data-label={`${e.title}, ${e.org?.split(",")[0]}`}>
                   <td class="mono">—</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
@@ -142,8 +143,8 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
           <table class="kv">
             <caption class="mono">Table 4-1. Competition results</caption>
             <tbody>
-              {c.awards.map((a) => (
-                <tr data-domains="math"><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
+              {c.awards.map((a, i) => (
+                <tr id={`res-${i}`} data-domains="math" data-label={a.title}><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
               ))}
             </tbody>
           </table>
@@ -162,7 +163,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
           <h2 id="app-h"><span class="n mono">6</span>Application notes — selected work</h2>
           <ol class="apps">
             {c.projects.map((p, i) => (
-              <li data-domains={p.domains.join(" ")}>
+              <li id={`an-${p.slug}`} data-domains={p.domains.join(" ")} data-label={`AN-${String(i + 1).padStart(2, "0")} · ${p.title}`}>
                 <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
                 <a href={`/projects/${p.slug}`}><b>{p.title}</b></a>
                 <span class="tag">{p.tagline}</span>
@@ -254,6 +255,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
   const pins = [...document.querySelectorAll<HTMLButtonElement>(".pin")];
   const out = document.querySelector<HTMLElement>(".chip-read");
   const idle = out?.textContent ?? "";
+  const list = document.querySelector<HTMLOListElement>(".trace-out");
   pins.forEach((pin) => pin.addEventListener("click", () => {
     const d = root.dataset.pin === pin.dataset.domain ? "" : pin.dataset.domain!;
     root.dataset.pin = d;
@@ -265,8 +267,33 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
       el.classList.toggle("lit", on);
       el.classList.toggle("dim", !!d && !on);
     });
-    if (out) out.textContent = d ? `${pin.dataset.desc} → ${n} record${n === 1 ? "" : "s"} lit below` : idle;
+    if (out) out.textContent = d ? `${pin.dataset.desc} → ${n} record${n === 1 ? "" : "s"}:` : idle;
+    if (list) {
+      list.replaceChildren(...[...document.querySelectorAll<HTMLElement>(".lit")].map((el) => {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = `#${el.id}`;
+        a.textContent = el.dataset.label ?? el.id;
+        li.append(a);
+        return li;
+      }));
+      list.hidden = !d;
+    }
   }));
+
+  // Following a trace: scroll to the record and flash it.
+  list?.addEventListener("click", (ev) => {
+    const a = (ev.target as HTMLElement).closest("a");
+    if (!a) return;
+    const target = document.querySelector<HTMLElement>(a.getAttribute("href")!);
+    if (!target) return;
+    ev.preventDefault();
+    target.closest(".reveal")?.classList.add("in");
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    history.replaceState(null, "", a.getAttribute("href"));
+    target.classList.remove("flash"); void target.offsetWidth; target.classList.add("flash");
+    target.setAttribute("tabindex", "-1"); target.focus({ preventScroll: true });
+  });
 </script>
 
 <style is:global>
@@ -342,7 +369,15 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
   .chip b { font-size: 26px; font-weight: 900; font-variation-settings: "wdth" 125; line-height: 1; }
   .chip .mono { font-size: 10px; color: #ddd; }
   .notch { position: absolute; top: -2px; left: 50%; width: 20px; height: 10px; margin-left: -10px; border-radius: 0 0 10px 10px; background: var(--paper); border: 2px solid var(--ink); border-top: 0; }
-  .chip-read { font-size: 12px; margin: 14px 0 0; min-height: 2.6em; color: var(--dim); }
+  .chip-read { font-size: 12px; margin: 14px 0 0; color: var(--dim); }
+  .trace-out { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+  .trace-out a { display: inline-block; padding: 3px 8px; border: 2px solid var(--ink); color: var(--ink); text-decoration: none; background: var(--paper); }
+  .trace-out a::after { content: " ↓"; }
+  .trace-out a:hover { background: var(--ink); color: var(--hi); }
+  .trace-out li { animation: pop .3s both; } .trace-out li:nth-child(2) { animation-delay: .05s; } .trace-out li:nth-child(3) { animation-delay: .1s; } .trace-out li:nth-child(n+4) { animation-delay: .15s; }
+  @keyframes pop { from { opacity: 0; transform: translateY(4px); } }
+  .flash { animation: flash 1.4s ease-out; outline: none; }
+  @keyframes flash { 0%, 30% { box-shadow: inset 0 0 0 3px var(--blue); background-color: var(--hi); } }
   :root[data-pin]:not([data-pin=""]) .chip { animation: chip 1.2s ease-in-out infinite alternate; }
   @keyframes chip { to { box-shadow: 0 0 0 4px var(--hi); } }
 
@@ -362,6 +397,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
   #rev thead th { border-bottom: 2px solid var(--line); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
   #rev tbody th { font-weight: 700; }
   #rev tr.cur { background: linear-gradient(90deg, var(--hi), transparent 70%); }
+  :root[data-pin]:not([data-pin=""]) #rev tr.cur:not(.lit) { background: none; }
   #rev tr.edu td, #rev tr.edu th { color: var(--dim); }
   #rev tr.sep th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; padding-top: 16px; border-bottom: 2px solid var(--line); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

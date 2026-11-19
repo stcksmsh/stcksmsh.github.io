@@ -25,7 +25,7 @@ export const domains = [
   { id: "math", label: "MATH", desc: "Olympiad mathematics & algorithms" },
   { id: "systems", label: "SYSTEMS", desc: "Systems & backends" },
   { id: "tools", label: "TOOLS", desc: "Developer tools & CLIs" },
-  { id: "mobile", label: "MOBILE", desc: "Android apps" },
+  { id: "android", label: "ANDROID", desc: "Android apps, at work and outside it" },
   { id: "audio", label: "AUDIO", desc: "Audio & speech" },
   { id: "creative", label: "CREATIVE", desc: "Creative coding" },
   { id: "web", label: "WEB", desc: "Web apps & extensions" },
@@ -40,9 +40,9 @@ const projectDomains: Record<string, string[]> = {
   aegis: ["systems", "tools"],
   skilltree: ["web", "systems"],
   emojitype: ["web", "tools"],
-  kap: ["mobile"],
+  kap: ["android"],
   "sinteza-viz": ["creative", "web", "audio"],
-  "beograd-plus-plus": ["mobile"],
+  "beograd-plus-plus": ["android"],
 };
 
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
