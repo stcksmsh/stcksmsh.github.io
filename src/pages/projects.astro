@@ -1,126 +1,178 @@
 ---
-import Base from "../layouts/Base.astro";
-import { getCollection } from "astro:content";
-import { padForTicker } from "../lib/ticker";
+// Software index: the "parts catalogue". Every listed federated project as a part,
+// with the same U-refs and domain pins as the homepage board (which is the graph view
+// of this table). Datasheet family, Profile layout: no visualizer, no player.
+import Profile from "../layouts/Profile.astro";
+import { identity as id, loadParts, domains } from "../data/profile";
 import { isListed } from "../lib/listing";
+import "../styles/catalogue.css";
 
-let projects: any[] = [];
+let parts: Awaited<ReturnType<typeof loadParts>> = [];
 try {
-  const all = await getCollection("projects");
-  projects = all
-    .map((p) => p.data)
-    .filter(isListed)
-    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
-} catch {}
-
-const nav = [
-  ["projects", "/projects"],
-  ["music", "/music"],
-  ["devlog", "/devlog"],
-  ["cv", "/cv"],
-];
+  parts = (await loadParts()).filter(isListed);
+} catch (err) {
+  console.warn("[projects] collection unavailable:", err);
+}
+const statuses = ["active", "shipped", "archived"].filter((s) => parts.some((p) => p.status === s));
+const usedDomains = domains.filter((d) => parts.some((p) => p.domains.includes(d.id)));
+const ymd = (d?: Date) => d?.toISOString().slice(0, 10) ?? "";
 ---
-<Base title="Projects — Kosta Vukićević" description="Everything federated from the io-page branches.">
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
+<Profile title={`Projects — ${id.name}`} description="Software I build in my own time: a catalogue of parts, by domain and status." fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <a href="/" class="logo" aria-label="Homepage">KV</a>
+      <nav aria-label="Primary" class="mono">
+        <a href="/">Home</a><a href="/projects" aria-current="page">Projects</a><a href="/devlog">Build log</a><a href="/cv">CV</a>
+      </nav>
+    </header>
+    <main id="main">
+      <header class="head">
+        <p class="eyebrow mono">Catalogue · {parts.length} parts</p>
+        <h1>Projects</h1>
+        <p class="lede">Software I build in my own time. Each part is wired to the domains it uses, the same pins as the chip on the <a href="/">homepage board</a>.</p>
+      </header>
 
-  <header class="shell projects-hero">
-    <span class="coord">// PROJECTS</span>
-    <h1>Everything I'm building</h1>
-    <p class="lede">
-      Federated from each project's own <code>io-page</code> branch at build
-      time — see <a href="/devlog">/devlog</a> for the build log behind them.
-    </p>
-  </header>
+      {parts.length === 0 ? (
+        <section class="block"><p class="mono">No projects federated in this build.</p></section>
+      ) : (
+        <section class="block" aria-labelledby="c-h">
+          <h2 id="c-h"><span class="n mono">1</span>Parts</h2>
 
-  <section class="shell" style="margin-top: 3rem;">
-    {projects.length === 0 ? (
-      <p class="empty coord">
-        // no federated projects yet — push an <code>io-page</code> branch
-        with a <code>meta.json</code> to any repo in the manifest
-      </p>
-    ) : (
-      <ul class="cards">
-        {projects.map((p) => (
-          <li
-            class="card"
-            style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
-          >
-            {/* Level 3 projects link straight to their own site. */}
-            <a href={p.url ?? `/projects/${p.slug}`}>
-              <span class="card-status coord">{p.status}{p.url && " · own site ↗"}</span>
-              <h3>{p.title}</h3>
-              <p class="card-tag">{p.tagline}</p>
-              <div class="ticker-viewport" aria-hidden="true">
-                <ul class="stack">
-                  {[...padForTicker(p.stack.slice(0, 4)), ...padForTicker(p.stack.slice(0, 4))].map((s: string | null) =>
-                    s === null ? <li class="ticker-gap" /> : <li>{s}</li>
-                  )}
-                </ul>
-              </div>
-            </a>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
-</Base>
+          <form class="filters mono" id="filters" hidden onsubmit="return false" aria-label="Filter projects">
+            <label class="search"><span class="vh">Search</span><input type="search" name="q" placeholder="Search name, stack…" autocomplete="off" /></label>
+            <fieldset>
+              <legend>Pin</legend>
+              {usedDomains.map((d) => <button type="button" data-domain={d.id} aria-pressed="false">{d.label}</button>)}
+            </fieldset>
+            <fieldset>
+              <legend>Status</legend>
+              {statuses.map((s) => <button type="button" data-status={s} aria-pressed="false">{s}</button>)}
+            </fieldset>
+            <p class="count" aria-live="polite"><span id="shown">{parts.length}</span> of {parts.length} shown <button type="reset" class="clear">Clear</button></p>
+          </form>
+
+          <div class="tablewrap">
+            <table class="parts">
+              <thead class="mono">
+                <tr>
+                  <th scope="col" class="c-ref">Ref</th>
+                  <th scope="col">Part</th>
+                  <th scope="col" class="c-st">Status</th>
+                  {usedDomains.map((d) => <th scope="col" class="c-pin" title={d.desc}><span>{d.label}</span></th>)}
+                  <th scope="col" class="c-log">Log</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parts.map((p) => (
+                  <tr data-domains={p.domains.join(" ")} data-status={p.status} data-text={`${p.title} ${p.tagline} ${p.stack.join(" ")}`.toLowerCase()}>
+                    <td class="c-ref mono">{p.ref}</td>
+                    <td class="c-part">
+                      <a class="title" href={p.url ?? `/projects/${p.slug}`}>{p.title}{p.url && <span class="ext" aria-label="(own site)"> ↗</span>}</a>
+                      <p class="tag">{p.tagline}</p>
+                      <p class="stack mono">{p.stack.join(" · ")}</p>
+                      <p class="pinlist mono">{p.domains.map((d) => domains.find((x) => x.id === d)?.label).join(" · ")}</p>
+                    </td>
+                    <td class="c-st"><span class={`badge ${p.status}`}>{p.status}</span></td>
+                    {usedDomains.map((d) => <td class="c-pin">{p.domains.includes(d.id) ? <span class="pin" role="img" aria-label={d.label}></span> : ""}</td>)}
+                    <td class="c-log mono">{p.logs ? <><span>{p.logs}</span> <time datetime={ymd(p.lastLog)}>{ymd(p.lastLog)}</time></> : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="none mono" id="none" hidden>No part matches these filters.</p>
+        </section>
+      )}
+
+      <section class="block legend mono" aria-label="Legend">
+        <p><span class="badge active">active</span> being worked on · <span class="badge shipped">shipped</span> released · <span class="badge archived">archived</span> finished or abandoned · <span class="pin"></span> uses this domain · Log: build-log entries, latest date</p>
+      </section>
+    </main>
+  </div>
+</Profile>
+
+<script>
+  const form = document.getElementById("filters") as HTMLFormElement | null;
+  if (form) {
+    form.hidden = false;
+    const rows = [...document.querySelectorAll<HTMLTableRowElement>("table.parts tbody tr")];
+    const shown = document.getElementById("shown")!;
+    const none = document.getElementById("none")!;
+    const q = form.elements.namedItem("q") as HTMLInputElement;
+    const pressed = (attr: string) =>
+      [...form.querySelectorAll<HTMLButtonElement>(`button[${attr}][aria-pressed="true"]`)].map((b) => b.getAttribute(attr)!);
+    const apply = () => {
+      const text = q.value.trim().toLowerCase();
+      const ds = pressed("data-domain"), ss = pressed("data-status");
+      let n = 0;
+      for (const r of rows) {
+        const mine = r.dataset.domains!.split(" ");
+        const ok = (!text || r.dataset.text!.includes(text)) && ds.every((d) => mine.includes(d)) && (!ss.length || ss.includes(r.dataset.status!));
+        r.hidden = !ok;
+        if (ok) n++;
+      }
+      shown.textContent = String(n);
+      none.hidden = n > 0;
+    };
+    form.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button[aria-pressed]");
+      if (!b) return;
+      b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+      apply();
+    });
+    q.addEventListener("input", apply);
+    form.addEventListener("reset", () => {
+      form.querySelectorAll("button[aria-pressed]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+      setTimeout(apply);
+    });
+  }
+</script>
 
 <style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: end; margin: 0 0 16px; font-size: 13px; }
+  .search input { font: inherit; border: 2px solid var(--ds-ink); background: #fff; padding: 6px 10px; width: min(18rem, 100%); }
+  .search { flex: 1 1 14rem; display: flex; }
+  .search input { flex: 1; }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  legend { float: left; margin-right: 6px; color: var(--ds-dim); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+  .filters button { font: 600 12px/1.6 "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .04em; border: 1.5px solid var(--ds-ink); background: var(--ds-paper); padding: 2px 8px; cursor: pointer; color: var(--ds-ink); }
+  .filters button[aria-pressed="true"] { background: var(--ds-ink); color: var(--ds-hi); }
+  .filters button:hover { background: var(--ds-hi); color: var(--ds-ink); }
+  .count { margin: 0; color: var(--ds-dim); flex-basis: 100%; }
+  .count .clear { margin-left: 8px; }
 
-  /* Shared with .music-hero/.devlog-hero so the three nav-adjacent pages
-     don't jump height on navigation (jarring with View Transitions). */
-  .projects-hero {
-    padding-top: clamp(2rem, 5vw, 4rem);
-    min-height: clamp(420px, 46vh, 520px);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .projects-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
-  .projects-hero .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
-  .projects-hero .lede code { color: var(--accent); font-size: 0.85em; }
+  .tablewrap { overflow-x: auto; }
+  .parts { border-collapse: collapse; width: 100%; }
+  .parts th, .parts td { text-align: left; vertical-align: top; padding: 10px 10px 10px 0; border-bottom: 1px solid var(--ds-rule); }
+  .parts thead th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ds-dim); border-bottom: 2px solid var(--ds-ink); vertical-align: bottom; font-weight: 600; }
+  .parts tbody tr:hover { background: linear-gradient(90deg, var(--ds-hi), transparent 55%); }
+  .c-ref { width: 3.5em; font-weight: 700; }
+  .c-st { width: 6.5em; }
+  .c-pin { width: 1.9em; text-align: center !important; padding-right: 4px !important; padding-left: 4px !important; }
+  thead .c-pin span { writing-mode: vertical-rl; transform: rotate(180deg); display: inline-block; white-space: nowrap; }
+  tbody .c-pin { padding-top: 16px !important; }
+  .c-log { width: 8em; font-size: 12px; white-space: nowrap; }
+  .c-log span { font-weight: 700; }
+  .title { font-weight: 800; font-size: 19px; color: var(--ds-ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .title:hover { color: var(--ds-blue); }
+  .tag { margin: 2px 0 0; max-width: 60ch; }
+  .stack, .pinlist { margin: 4px 0 0; font-size: 12px; color: var(--ds-dim); }
+  .pinlist { display: none; }
+  .none { margin: 12px 0 0; }
+  .legend p { margin: 0; font-size: 12px; line-height: 2.1; color: var(--ds-dim); }
 
-  .cards { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  .card {
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope), transform 0.2s var(--ease-scope);
+  /* Narrow: rows become cards; pin columns fold into the inline pin list. */
+  @media (max-width: 760px) {
+    .parts thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .parts, .parts tbody { display: block; }
+    .parts tr { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--ds-rule); }
+    .parts tr[hidden] { display: none; }
+    .parts td { border: 0; padding: 0; width: auto; }
+    .parts .c-pin { display: none; }
+    .c-part { grid-column: 1 / -1; grid-row: 2; }
+    .c-log { grid-column: 3; grid-row: 1; justify-self: end; }
+    .c-st { grid-column: 2; grid-row: 1; }
+    .pinlist { display: block; }
   }
-  .card:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); transform: translateY(-2px); }
-  .card a { display: block; padding: 1.5rem; color: inherit; }
-  .card a:hover { text-decoration: none; }
-  .card-status { display: inline-block; color: var(--accent); margin-bottom: 0.75rem; }
-  .card h3 { font-size: var(--step-1); margin-bottom: 0.4rem; }
-  .card-tag { color: var(--ink-dim); font-size: var(--step--1); margin-bottom: 1rem; }
-  /* Ticker scroll mechanics live in global.css; this just keeps the pill look. */
-  .stack { list-style: none; }
-  .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
-
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
-  .empty code { color: var(--accent); }
 </style>

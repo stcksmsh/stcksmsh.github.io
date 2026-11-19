@@ -26,8 +26,8 @@ const parts: PartInput[] = [
     id: `edu-${i}`, ref: `U${20 + i}`, kind: "ic" as const, title: "ETF BELGRADE", sub: "SOFTWARE ENG.", href: "#work",
     domains: ["math", "systems"], detail: `${e.title} — ${e.org} (${range(e.start, e.end)})`,
   })),
-  ...c.projects.map((p, i) => ({
-    id: `p-${p.slug}`, ref: `U${i + 2}`, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
+  ...c.projects.map((p) => ({
+    id: `p-${p.slug}`, ref: p.ref, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
     domains: p.domains, detail: `${p.tagline}  [${p.stack.join(" · ")}]`,
   })),
 ];

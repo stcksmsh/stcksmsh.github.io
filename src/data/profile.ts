@@ -1,7 +1,7 @@
 // Single factual source for the personal/professional pages (root + CV).
 // CV facts come from src/content/cv (owner: use as is, see docs/agent-handoff/CONTENT_AUDIT.md).
 // Projects come from federation but are optional: the root must render without them.
-import { getCollection, render } from "astro:content";
+import { getCollection, render, type CollectionEntry } from "astro:content";
 import { isListed } from "../lib/listing";
 
 export const identity = {
@@ -46,6 +46,23 @@ const projectDomains: Record<string, string[]> = {
   "beograd-plus-plus": ["android"],
 };
 
+type ProjectData = CollectionEntry<"projects">["data"];
+export type Part = ProjectData & { ref: string; domains: string[]; logs: number; lastLog?: Date };
+
+// Every federated project as a catalogue part. Refs (U2, U3, …) are stable across
+// the homepage board and the catalogue: featured first, then manifest order.
+// Includes unlisted projects (their own page still builds); filter with isListed.
+export async function loadParts(): Promise<Part[]> {
+  const [projects, logs] = await Promise.all([getCollection("projects"), getCollection("devlogs", (e) => !e.data.draft)]);
+  return projects
+    .map((p) => p.data)
+    .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order)
+    .map((p, i) => {
+      const mine = logs.filter((l) => l.data.project === p.slug).map((l) => l.data.date).sort((a, b) => b.valueOf() - a.valueOf());
+      return { ...p, ref: `U${i + 2}`, domains: projectDomains[p.slug] ?? [], logs: mine.length, lastLog: mine[0] };
+    });
+}
+
 export async function loadProfile() {
   const cv = await getCollection("cv");
   const by = (s: string) => cv.filter((e) => e.data.section === s).sort((a, b) => a.data.order - b.data.order);
@@ -54,12 +71,9 @@ export async function loadProfile() {
     by("experience").map(async (e) => ({ ...e.data, Body: e.body?.trim() ? (await render(e)).Content : null, long: (e.body?.length ?? 0) > 400 })),
   );
 
-  let projects: { slug: string; title: string; tagline: string; status: string; stack: string[]; repo: string; url?: string; domains: string[] }[] = [];
+  let projects: Part[] = [];
   try {
-    projects = (await getCollection("projects"))
-      .map((p) => ({ ...p.data, domains: projectDomains[p.data.slug] ?? [] }))
-      .filter((p) => p.featured && isListed(p))
-      .sort((a, b) => a.order - b.order);
+    projects = (await loadParts()).filter((p) => p.featured && isListed(p));
   } catch (err) {
     console.warn("[profile] projects collection unavailable, omitting selected work:", err);
     // Federation unavailable: the concepts simply omit the projects block.
