@@ -5,7 +5,8 @@ import mdx from "@astrojs/mdx";
 // For a user/org page (stcksmsh.github.io) base stays "/".
 // For a project page it'd be "/repo-name".
 export default defineConfig({
-  site: "https://stcksmsh.github.io",
+  // Served at the custom domain set in the repo's Pages settings; stcksmsh.github.io 301s there.
+  site: "https://kostavukicevic.com",
   base: "/",
   integrations: [react(), mdx()],
   output: "static",

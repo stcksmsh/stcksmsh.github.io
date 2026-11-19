@@ -49,7 +49,9 @@ if [ "$base" = "/" ]; then
   site_url="https://example.invalid/"
   url_note="  !! publication.json url is a placeholder (base path '/'): set it to the real hostname before pushing."
 else
-  site_url="https://$owner.github.io$base"
+  # Project Pages follow the owner's user-site domain (kostavukicevic.com for stcksmsh);
+  # override with SITE_ORIGIN=https://… for another owner.
+  site_url="${SITE_ORIGIN:-https://kostavukicevic.com}$base"
   url_note=""
 fi
 

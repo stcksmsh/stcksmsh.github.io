@@ -40,7 +40,7 @@ By default every project on `/projects/[slug]` gets the same generic template (h
 
 ## Project publication levels (Level 3 `website` branch is a PILOT)
 
-Brief §6. **Status: PROPOSED** — mechanism + template exist, no real project has opted in yet. Standardise only after one real project pilots it end to end.
+Brief §6. **Status: PILOT IN PROGRESS with kabl (2026-11-19)** — `stcksmsh/kabl` has `website` + `io-page` branches and `"website": true` in the manifest; federate merges its publication.json. **Domain:** the root site is served at `kostavukicevic.com` (custom domain in Pages settings, no CNAME file; `stcksmsh.github.io` 301s there), so project sites live at `kostavukicevic.com/<Repo>/` and `astro.config` `site` is `https://kostavukicevic.com`. Enabling Pages on a project repo creates a `github-pages` environment that only allows the default branch: add `website` to its deployment branches or the deploy is rejected.
 
 1. **Index entry** — `meta.json` on `io-page`; listed, links to repo/demo.
 2. **Embedded page** — `io-page` + `devlogs/` + optional `page/entry.tsx` (section above); compiled into this site's build.
