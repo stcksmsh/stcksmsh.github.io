@@ -49,10 +49,10 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
           <table class="kv"><tbody>{c.awards.map((a) => <tr><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>)}</tbody></table>
         </section>
         <section class="block" aria-labelledby="s-h">
-          <h2 id="s-h"><span class="n mono">4</span>Specifications</h2>
+          <h2 id="s-h"><span class="n mono">4</span>Skills</h2>
           <dl class="spec">
-            <dt>Skills</dt><dd>{c.skills.map((x) => x.title).join(", ")}</dd>
-            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join("; ")}</dd>
+            {c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.length ? g.items.join(" · ") : g.title}</dd></>)}
+            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join(" · ")}</dd>
           </dl>
         </section>
       </div>
@@ -92,12 +92,13 @@ const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
   .kv { border-collapse: collapse; width: 100%; }
   .kv td, .kv th { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid #bbb; }
   .kv td { width: 4.5em; }
-  .spec { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec { display: grid; grid-template-columns: 10.5em 1fr; gap: 8px 12px; margin: 0; }
   .spec dt { font-weight: 700; } .spec dd { margin: 0; }
   @media (max-width: 640px) {
     .sheet { box-shadow: none; border-width: 0 0 2px; }
     .entry { grid-template-columns: 1fr; }
     .cols { grid-template-columns: 1fr; } .cols .block + .block { border-left: 0; }
+    .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 8px; }
   }
   @media print {
     @page { size: A4; margin: 12mm; }

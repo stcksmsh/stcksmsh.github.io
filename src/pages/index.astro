@@ -4,7 +4,7 @@
 // Subject link: automotive embedded/Android engineering; brief's C4 "technical manual" reference.
 // Career = revision history, olympiads = characterisation data, projects = application notes.
 import Profile from "../layouts/Profile.astro";
-import { identity as id, loadProfile } from "../data/profile";
+import { identity as id, loadProfile, domains, toYear } from "../data/profile";
 const c = await loadProfile();
 const cv = "/cv";
 const range = (s?: string, e?: string) => [s, e].filter(Boolean).join(" – ");
@@ -12,6 +12,25 @@ const yearOf = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const firstYear = yearOf(c.experience.at(-1)?.start);
 // Revisions: oldest role = Rev A, current role = highest letter.
 const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i);
+
+// Timeline ruler: every dated record, oldest → newest.
+const events = [
+  ...c.awards.map((a) => ({ t: toYear(a.start), label: a.title })),
+  ...c.education.map((e) => ({ t: toYear(e.start), label: `Starts ${e.title} — ${e.org?.split(",")[0]}` })),
+  ...c.experience.map((e) => ({ t: toYear(e.start), label: `${e.title} — ${e.org}` })),
+].filter((e): e is { t: number; label: string } => e.t !== null).sort((a, b) => a.t - b.t)
+  // Same-date records share one marker.
+  .reduce<{ t: number; label: string }[]>((acc, e) => {
+    const last = acc.at(-1);
+    if (last && Math.abs(last.t - e.t) < 0.01) last.label += ` + ${e.label}`; else acc.push({ ...e });
+    return acc;
+  }, []);
+const now = toYear("Present")!;
+const t0 = Math.floor(events[0]?.t ?? now - 1);
+const pos = (t: number) => ((t - t0) / (now - t0)) * 100;
+const years = Array.from({ length: Math.floor(now) - t0 + 1 }, (_, i) => t0 + i);
+const months = Math.round((now - t0) * 12);
+const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
 ---
 <Profile title={id.name} description={`${id.role}, ${id.employer}. Experience, education, selected work and contact.`} fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&display=swap">
   <a class="skip" href="#main">Skip to content</a>
@@ -28,26 +47,37 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
 
     <main id="main">
       <section class="title" aria-labelledby="name">
-        <h1 id="name">{id.name}</h1>
+        <h1 id="name" aria-label={id.name}>{id.name.split(" ").map((w, wi) => (
+          <span class="word" aria-hidden="true">{[...w].map((ch, ci) => <span class="ch" style={`--d:${wi * 6 + ci}`}>{ch}</span>)}</span>
+        ))}</h1>
         <p class="sub">{id.role} — {id.employer}</p>
         <div class="pn mono">
           <span>Part no.</span><b>KV-SWE-II</b>
-          <span>Status</span><b class="ok">In production</b>
+          <span>Status</span><b class="ok"><i class="led" aria-hidden="true"></i>In production</b>
           {firstYear && <><span>Since</span><b>{firstYear}</b></>}
         </div>
-        <div class="rule" aria-hidden="true"></div>
+        <div class="ruler" style={`--m:${months}`} data-t0={t0} data-t1={now}>
+          <div class="ticks" aria-hidden="true"></div>
+          {years.map((y) => <span class="yr mono" aria-hidden="true" style={`left:${pos(y)}%`}>{y}</span>)}
+          <ol class="evs" aria-label={`Timeline ${t0}–${Math.floor(now)}`}>
+            {events.map((e) => (
+              <li tabindex="0" style={`left:${pos(e.t)}%`} data-t={e.t} data-label={e.label}><span class="sr-only">{Math.floor(e.t)}: {e.label}</span></li>
+            ))}
+          </ol>
+          <div class="head" aria-hidden="true"><span class="read mono"></span></div>
+        </div>
       </section>
 
-      <section class="cols">
+      <section class="cols reveal">
         <div class="block">
           <h2><span class="n mono">1</span>Features</h2>
-          {/* Hand-condensed from: experience-1..4 (titles, orgs, intern body para 2), award-1..5, project list.
+          {/* Hand-condensed from: experience-1..4, award-1..5, federated project stacks.
               Re-check against src/content/cv when any of those change. */}
           <ul class="feat">
-            <li>Production Android engineering for vehicle infotainment{firstYear && `, since ${firstYear}`}</li>
-            <li>Kotlin-first; shipped customer-facing navigation features</li>
+            <li>Software engineer shipping production code in automotive infotainment{firstYear && ` since ${firstYear}`}</li>
+            <li>Generalist problem solver: picks the stack the problem needs — Rust, Python, TypeScript, Kotlin</li>
             <li>Mathematics olympiad background: IMO, BMO, IOI</li>
-            <li>Independent builder: tools, Android apps, audio and web experiments</li>
+            <li>Builds constantly outside work: developer tools, creative coding, audio and web</li>
           </ul>
         </div>
         <div class="block">
@@ -58,29 +88,32 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
             <a href={`mailto:${id.email}`} class="btn ghost">Email</a>
           </div>
         </div>
-        <figure class="block fig">
-          <figcaption class="mono">Figure 1. Functional block diagram</figcaption>
-          <svg viewBox="0 0 320 210" role="img" aria-labelledby="fig1">
-            <title id="fig1">Block diagram: mathematics and computer science feed into Android engineering at {id.employer}, which outputs shipped vehicle features; side projects branch off.</title>
-            <g class="blk"><rect x="8" y="20" width="92" height="44" /><text x="54" y="47">MATH</text></g>
-            <g class="blk"><rect x="8" y="140" width="92" height="44" /><text x="54" y="167">CS / ETF</text></g>
-            <g class="blk core"><rect x="128" y="70" width="104" height="64" /><text x="180" y="99">ANDROID</text><text x="180" y="117" class="small">KOTLIN · AUTO</text></g>
-            <g class="blk"><rect x="252" y="80" width="60" height="44" /><text x="282" y="107">OUT</text></g>
-            <path d="M100 42 H114 V92 H128 M100 162 H114 V112 H128 M232 102 H252" class="wire" />
-            <path d="M180 134 V190 H300" class="wire dash" />
-            <text x="312" y="204" class="small" style="text-anchor:end">side projects</text>
-          </svg>
+        <figure class="block fig" aria-labelledby="fig1">
+          <figcaption id="fig1" class="mono">Figure 1. Pin configuration — select a pin to trace it through this page</figcaption>
+          <div class="pkg">
+            {[domains.slice(0, 4), domains.slice(4)].map((side, si) => (
+              <ul class={`pins ${si ? "r" : "l"}`}>
+                {side.map((d, k) => (
+                  <li><button type="button" class="pin" data-domain={d.id} data-desc={d.desc} aria-pressed="false" style={`--i:${si * 4 + k}`}>
+                    <span class="no mono" aria-hidden="true">{si ? 8 - k : k + 1}</span><span class="lbl mono">{d.label}</span><span class="trace" aria-hidden="true"></span>
+                  </button></li>
+                ))}
+              </ul>
+            ))}
+            <div class="chip" aria-hidden="true"><span class="notch"></span><b>KV</b><span class="mono">SWE-II</span></div>
+          </div>
+          <p class="chip-read mono" aria-live="polite">8 pins, one engineer. Nothing here is single-purpose.</p>
         </figure>
       </section>
 
-      <section id="rev" class="block wide" aria-labelledby="rev-h">
+      <section id="rev" class="block wide reveal" aria-labelledby="rev-h">
         <h2 id="rev-h"><span class="n mono">3</span>Revision history</h2>
         <div class="tbl">
           <table>
             <thead><tr><th scope="col">Rev</th><th scope="col">Date</th><th scope="col">Role</th><th scope="col">Organisation</th><th scope="col">Notes</th></tr></thead>
             <tbody>
               {c.experience.map((e, i) => (
-                <tr class={i === 0 ? "cur" : ""}>
+                <tr class={i === 0 ? "cur" : ""} data-domains={isAuto(e.org) ? "auto" : ""}>
                   <td class="mono">{rev(i)}</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
@@ -90,7 +123,7 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
               ))}
               {c.education.length > 0 && <tr class="sep"><th colspan="5" scope="colgroup">Education</th></tr>}
               {c.education.map((e) => (
-                <tr class="edu">
+                <tr class="edu" data-domains="math">
                   <td class="mono">—</td>
                   <td class="mono nowrap">{range(e.start, e.end)}</td>
                   <th scope="row">{e.title}</th>
@@ -103,14 +136,14 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
         </div>
       </section>
 
-      <section class="cols two">
+      <section class="cols two reveal">
         <div class="block" aria-labelledby="char-h">
           <h2 id="char-h"><span class="n mono">4</span>Characterisation data</h2>
           <table class="kv">
             <caption class="mono">Table 4-1. Competition results</caption>
             <tbody>
               {c.awards.map((a) => (
-                <tr><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
+                <tr data-domains="math"><td class="mono">{a.start}</td><th scope="row">{a.title}</th></tr>
               ))}
             </tbody>
           </table>
@@ -118,19 +151,18 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
         <div class="block" aria-labelledby="spec-h">
           <h2 id="spec-h"><span class="n mono">5</span>Specifications</h2>
           <dl class="spec">
-            <dt>Skills</dt><dd>{c.skills.map((x) => x.title).join(", ")}</dd>
-            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join("; ")}</dd>
-            <dt>Location</dt><dd>{id.location}</dd>
+            {c.skills.map((g) => <><dt>{g.title}</dt><dd>{g.items.length ? g.items.join(" · ") : g.title}</dd></>)}
+            <dt>Certifications</dt><dd>{c.certifications.map((x) => x.title).join(" · ")}</dd>
           </dl>
         </div>
       </section>
 
       {c.projects.length > 0 && (
-        <section id="app" class="block wide" aria-labelledby="app-h">
+        <section id="app" class="block wide reveal" aria-labelledby="app-h">
           <h2 id="app-h"><span class="n mono">6</span>Application notes — selected work</h2>
           <ol class="apps">
             {c.projects.map((p, i) => (
-              <li>
+              <li data-domains={p.domains.join(" ")}>
                 <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
                 <a href={`/projects/${p.slug}`}><b>{p.title}</b></a>
                 <span class="tag">{p.tagline}</span>
@@ -141,7 +173,7 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
         </section>
       )}
 
-      <section class="block wide order" aria-labelledby="ord-h">
+      <section class="block wide order reveal" aria-labelledby="ord-h">
         <h2 id="ord-h"><span class="n mono">7</span>Ordering information</h2>
         <ul class="mono">
           <li><span>Email</span><a href={`mailto:${id.email}`}>{id.email}</a></li>
@@ -154,6 +186,88 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
     <footer class="foot mono"><span>{id.name} · <a href="/projects">All projects</a> · <a href="/devlog">Devlog</a> · <a href="/music">Music</a></span><span>KV-SWE-II{c.experience.length > 0 && ` · Rev ${rev(0)}`}</span></footer>
   </div>
 </Profile>
+
+<script>
+  const root = document.documentElement;
+  root.classList.add("js");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Sections slide in as they enter the viewport.
+  const reveals = document.querySelectorAll(".reveal");
+  if (reduce || !("IntersectionObserver" in window)) reveals.forEach((el) => el.classList.add("in"));
+  else {
+    const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.08 });
+    reveals.forEach((el) => io.observe(el));
+  }
+
+  // Name: letters widen toward the pointer (variable-font width axis).
+  const title = document.querySelector<HTMLElement>(".title");
+  const chars = [...document.querySelectorAll<HTMLElement>("#name .ch")];
+  if (title && !reduce && matchMedia("(pointer: fine)").matches) {
+    let centers: { x: number; y: number }[] = [];
+    let frame = 0;
+    const measure = () => { centers = chars.map((c) => { const r = c.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }); };
+    title.addEventListener("pointerenter", measure);
+    addEventListener("scroll", () => (centers = []), { passive: true });
+    title.addEventListener("pointermove", (ev) => {
+      if (!centers.length) measure();
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => chars.forEach((c, i) => {
+        const d = Math.hypot(ev.clientX - centers[i].x, ev.clientY - centers[i].y);
+        c.style.setProperty("--w", String(62 + 58 * Math.max(0, 1 - d / 300) ** 1.5));
+      }));
+    });
+    title.addEventListener("pointerleave", () => { cancelAnimationFrame(frame); chars.forEach((c) => c.style.removeProperty("--w")); });
+  }
+
+  // Timeline ruler: a scan head; hover/focus reads out the nearest record.
+  const ruler = document.querySelector<HTMLElement>(".ruler");
+  if (ruler) {
+    const head = ruler.querySelector<HTMLElement>(".head")!;
+    const read = ruler.querySelector<HTMLElement>(".read")!;
+    const evs = [...ruler.querySelectorAll<HTMLElement>(".evs li")];
+    const t0 = Number(ruler.dataset.t0), t1 = Number(ruler.dataset.t1);
+    const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    const show = (t: number, label?: string) => {
+      ruler.classList.add("tracking");
+      const p = Math.min(1, Math.max(0, (t - t0) / (t1 - t0)));
+      head.style.left = `${p * 100}%`;
+      head.classList.toggle("flip", p > 0.7);
+      read.textContent = label ?? `${MONTHS[Math.min(11, Math.floor((t % 1) * 12))]} ${Math.floor(t)}`;
+      evs.forEach((e) => e.classList.toggle("hit", e.dataset.label === label));
+    };
+    const at = (x: number) => {
+      const r = ruler.getBoundingClientRect();
+      const t = t0 + ((x - r.left) / r.width) * (t1 - t0);
+      const near = evs.map((e) => ({ e, d: Math.abs(Number(e.dataset.t) - t) })).sort((a, b) => a.d - b.d)[0];
+      if (near && near.d < 0.35) show(Number(near.e.dataset.t), `${Math.floor(Number(near.e.dataset.t))} · ${near.e.dataset.label}`);
+      else show(t);
+    };
+    ruler.addEventListener("pointermove", (e) => at(e.clientX));
+    ruler.addEventListener("pointerdown", (e) => at(e.clientX));
+    ruler.addEventListener("pointerleave", () => { ruler.classList.remove("tracking"); evs.forEach((e) => e.classList.remove("hit")); });
+    evs.forEach((e) => e.addEventListener("focus", () => show(Number(e.dataset.t), `${Math.floor(Number(e.dataset.t))} · ${e.dataset.label}`)));
+    evs.forEach((e) => e.addEventListener("blur", () => ruler.classList.remove("tracking")));
+  }
+
+  // Pin configuration: select a domain, light up the matching records.
+  const pins = [...document.querySelectorAll<HTMLButtonElement>(".pin")];
+  const out = document.querySelector<HTMLElement>(".chip-read");
+  const idle = out?.textContent ?? "";
+  pins.forEach((pin) => pin.addEventListener("click", () => {
+    const d = root.dataset.pin === pin.dataset.domain ? "" : pin.dataset.domain!;
+    root.dataset.pin = d;
+    pins.forEach((p) => p.setAttribute("aria-pressed", String(p.dataset.domain === d)));
+    let n = 0;
+    document.querySelectorAll<HTMLElement>("[data-domains]").forEach((el) => {
+      const on = !!d && el.dataset.domains!.split(" ").includes(d);
+      if (on) n++;
+      el.classList.toggle("lit", on);
+      el.classList.toggle("dim", !!d && !on);
+    });
+    if (out) out.textContent = d ? `${pin.dataset.desc} → ${n} record${n === 1 ? "" : "s"} lit below` : idle;
+  }));
+</script>
 
 <style is:global>
   :root { --paper: #fdfdfb; --bg: #e7e6e1; --ink: #111; --dim: #5d5d5d; --line: #111; --hi: #ffd400; --blue: #0b4fb3; }
@@ -174,10 +288,26 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
 
   .title { padding: clamp(28px, 6vw, 72px) clamp(16px, 4vw, 40px) 0; position: relative; }
   .pn { display: grid; grid-template-columns: auto auto; gap: 2px 14px; font-size: 13px; position: absolute; right: clamp(16px, 4vw, 40px); top: clamp(28px, 6vw, 72px); border: 2px solid var(--line); padding: 8px 12px; }
-  .pn span { color: var(--dim); } .pn .ok { background: var(--hi); padding: 0 4px; }
-  h1 { font-size: clamp(52px, 10.5vw, 148px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.01em; margin: 0; max-width: 9ch; }
+  .pn span { color: var(--dim); } .pn .ok { background: var(--hi); padding: 0 4px; display: inline-flex; align-items: center; gap: 6px; }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: #1a9c4a; box-shadow: 0 0 0 0 #1a9c4a; animation: led 2.4s ease-out infinite; }
+  @keyframes led { 0% { box-shadow: 0 0 0 0 rgba(26,156,74,.7); } 70%, 100% { box-shadow: 0 0 0 7px rgba(26,156,74,0); } }
+  h1 { font-size: clamp(52px, 10.5vw, 148px); line-height: .95; font-weight: 900; font-variation-settings: "wdth" 62; text-transform: uppercase; letter-spacing: -.01em; margin: 0; }
+  .word { display: block; white-space: nowrap; }
+  .ch { display: inline-block; font-variation-settings: "wdth" var(--w, 62); transition: font-variation-settings .35s cubic-bezier(.2,.8,.2,1); animation: settle .9s cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--d) * 45ms); }
+  @keyframes settle { from { font-variation-settings: "wdth" 125; opacity: 0; } to { font-variation-settings: "wdth" 62; opacity: 1; } }
   .sub { font-size: clamp(18px, 2.2vw, 26px); font-weight: 600; font-variation-settings: "wdth" 85; margin: 14px 0 0; }
-  .rule { height: 14px; margin: 26px 0 0; background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 10px); border-bottom: 2px solid var(--line); }
+  .ruler { position: relative; height: 46px; margin: 26px 0 0; border-bottom: 2px solid var(--line); touch-action: pan-y; cursor: crosshair; }
+  .ticks { position: absolute; inset: auto 0 0 0; height: 10px; background: linear-gradient(90deg, var(--ink) 0 1px, transparent 1px) 0 0 / calc(100% / var(--m)) 100% repeat-x; }
+  .yr { position: absolute; bottom: 0; height: 40px; border-left: 2px solid var(--ink); padding-left: 4px; font-size: 11px; line-height: 1; color: var(--dim); }
+  .evs { list-style: none; margin: 0; padding: 0; }
+  .evs li { position: absolute; bottom: 14px; width: 10px; height: 10px; margin-left: -5px; background: var(--hi); border: 2px solid var(--ink); transform: rotate(45deg); outline-offset: 4px; }
+  .evs li.hit { background: var(--ink); }
+  .head { position: absolute; top: -6px; bottom: -2px; left: 0; width: 2px; background: var(--blue); pointer-events: none; animation: sweep 16s ease-in-out infinite alternate; }
+  .ruler.tracking .head { animation: none; }
+  .read { position: absolute; top: -20px; left: 6px; white-space: nowrap; font-size: 11px; background: var(--blue); color: #fff; padding: 1px 6px; opacity: 0; transition: opacity .2s; }
+  .head.flip .read { left: auto; right: 6px; }
+  .ruler.tracking .read { opacity: 1; }
+  @keyframes sweep { from { left: 0; } to { left: 100%; } }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr 1.15fr; border-bottom: 2px solid var(--line); }
   .cols.two { grid-template-columns: 1fr 1fr; }
@@ -191,14 +321,40 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
   .cta { display: flex; flex-wrap: wrap; gap: 10px; }
   .btn { background: var(--ink); color: #fff; padding: 9px 16px; text-decoration: none; font-weight: 700; }
   .btn.ghost { background: var(--hi); color: var(--ink); }
-  .fig figcaption { font-size: 12px; color: var(--dim); margin-bottom: 8px; }
-  .fig svg { width: 100%; height: auto; }
-  .blk rect { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
-  .blk.core rect { fill: var(--hi); }
-  .blk text, svg .small { font: 700 13px "Archivo", sans-serif; text-anchor: middle; fill: var(--ink); }
-  svg .small { font-weight: 500; font-size: 10px; }
-  .wire { fill: none; stroke: var(--ink); stroke-width: 2; }
-  .dash { stroke-dasharray: 4 4; }
+  .fig figcaption { font-size: 12px; color: var(--dim); margin-bottom: 12px; }
+  .pkg { display: grid; grid-template-columns: 1fr minmax(74px, .7fr) 1fr; align-items: stretch; }
+  .pins { list-style: none; margin: 0; padding: 10px 0; display: grid; gap: 8px; }
+  .pin { width: 100%; display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 6px; background: none; border: 0; padding: 4px 0; cursor: pointer; color: var(--ink); font: inherit; text-align: left; }
+  .pins.l { grid-column: 1; } .pins.r { grid-column: 3; } .chip { grid-column: 2; grid-row: 1; }
+  .pins.r .pin { grid-template-columns: 1fr auto auto; }
+  .pins.r .trace { order: -1; } .pins.r .no { order: 1; }
+  .pin .no { font-size: 10px; color: var(--dim); }
+  .pin .lbl { font-size: 12px; font-weight: 600; padding: 1px 4px; }
+  .trace { position: relative; height: 2px; background: var(--ink); overflow: hidden; min-width: 16px; }
+  .trace::after { content: ""; position: absolute; top: -2px; width: 10px; height: 6px; background: var(--hi); animation: pulse 2.6s linear infinite; animation-delay: calc(var(--i) * -.37s); }
+  .pins.l .trace::after { left: -10px; animation-name: pulse-r; }
+  .pins.r .trace::after { right: -10px; animation-name: pulse-l; }
+  @keyframes pulse-r { to { transform: translateX(calc(100% + 140px)); } }
+  @keyframes pulse-l { to { transform: translateX(calc(-100% - 140px)); } }
+  .pin:hover .lbl, .pin[aria-pressed="true"] .lbl { background: var(--ink); color: var(--hi); }
+  .pin[aria-pressed="true"] .trace { background: var(--blue); height: 3px; }
+  .chip { position: relative; border: 2px solid var(--ink); background: var(--ink); color: var(--hi); display: grid; place-content: center; text-align: center; gap: 2px; }
+  .chip b { font-size: 26px; font-weight: 900; font-variation-settings: "wdth" 125; line-height: 1; }
+  .chip .mono { font-size: 10px; color: #ddd; }
+  .notch { position: absolute; top: -2px; left: 50%; width: 20px; height: 10px; margin-left: -10px; border-radius: 0 0 10px 10px; background: var(--paper); border: 2px solid var(--ink); border-top: 0; }
+  .chip-read { font-size: 12px; margin: 14px 0 0; min-height: 2.6em; color: var(--dim); }
+  :root[data-pin]:not([data-pin=""]) .chip { animation: chip 1.2s ease-in-out infinite alternate; }
+  @keyframes chip { to { box-shadow: 0 0 0 4px var(--hi); } }
+
+  [data-domains] { transition: opacity .3s, background-color .3s; }
+  .dim { opacity: .28; }
+  .lit { background-color: rgba(255, 212, 0, .35) !important; }
+  .js .reveal { transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+  .js .reveal:not(.in) { opacity: 0; transform: translateY(24px); }
+  #rev.in tbody tr { animation: row .5s both; }
+  #rev.in tbody tr:nth-child(2) { animation-delay: .08s; } #rev.in tbody tr:nth-child(3) { animation-delay: .16s; }
+  #rev.in tbody tr:nth-child(4) { animation-delay: .24s; } #rev.in tbody tr:nth-child(n+5) { animation-delay: .32s; }
+  @keyframes row { from { opacity: 0; transform: translateX(-12px); } }
 
   .tbl { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; }
@@ -214,7 +370,7 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
   .kv caption { text-align: left; font-size: 12px; color: var(--dim); padding-bottom: 6px; }
   .kv td, .kv th { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid #bbb; font-weight: 600; }
   .kv td { font-weight: 400; width: 4.5em; }
-  .spec { display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 12px; margin: 0; }
+  .spec { display: grid; grid-template-columns: 10.5em 1fr; gap: 10px 12px; margin: 0; }
   .spec dt { font-weight: 700; } .spec dd { margin: 0; }
 
   .apps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
@@ -234,6 +390,7 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
     .apps { grid-template-columns: 1fr; }
     .order ul { grid-template-columns: 1fr 1fr; }
     .pn { position: static; display: inline-grid; margin-top: 18px; }
+    .yr:nth-of-type(even) { color: transparent; }
   }
   @media (max-width: 560px) {
     .sheet { box-shadow: none; border-width: 0 0 2px; }
@@ -244,5 +401,10 @@ const rev = (i: number) => String.fromCharCode(65 + c.experience.length - 1 - i)
     #rev th, #rev td { border: 0; padding: 0; }
     #rev td:first-child { grid-row: span 4; }
     .order ul { grid-template-columns: 1fr; }
+    .spec { grid-template-columns: 1fr; gap: 2px; } .spec dd { margin-bottom: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .head { display: none; } .ruler.tracking .head { display: block; }
   }
 </style>

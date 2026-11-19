@@ -38,6 +38,8 @@ const cv = defineCollection({
     start: z.string().optional(),
     end: z.string().optional(),
     order: z.number().default(0),
+    // skills section only: the entries in this group (title = group name)
+    items: z.array(z.string()).optional(),
   }),
 });
 
