@@ -66,8 +66,13 @@
 - `/projects/kap` overflows on phones because of a long `<code>` line in one of Kap's own devlogs.
 - If web fonts fail to load, the homepage intro text can overlap the chip (fallback metrics are wider). Low priority; consider a `size-adjust` fallback.
 
+## Session 4 (2026-11-19) done
+- Cert links: `url` field on cv entries renders as a link (`6af4b83`); URLs still needed from the owner.
+- Phase 2 polish (`4b6e048`): `/sitemap.xml` endpoint (no dependency), robots Sitemap line, `/404` (datasheet, noindex), `public/favicon.svg`, `public/og.png` (1200×630 board screenshot), OG/Twitter tags on both layouts.
+- Phase 3 software index (`150e7a8`): `/projects` = parts catalogue (filter by search/pin/status, collapses to cards ≤760px), `/projects/[slug]` = part datasheet (specs, custom "front panel" screen, build log as revisions, prev/next). Both on Profile layout. `loadParts()` gives stable U-refs shared with the board. Custom heroes get legacy tokens via `src/styles/custom-page-host.css` (zero-specificity selectors). Verified in headless Chrome at 1440/390/320: no overflow (Kap's code-line overflow fixed), no console errors, filters work, Mouthpiece renders.
+- Still legacy on Base.astro: `/devlog`, `/music`.
+
 ## Next exact action
-1. Owner: "site is OK" (session 4). Fill cert URLs when supplied.
-2. Owner asked about "libs/rework of per-project IO pages" as next step. Not in the brief as such: brief §9 has Phase 2 polish (OG/meta, sitemap, 404), Phase 3 software index (redesign `/projects` + per-project pages, off `Base.astro`), Phase 4 Level 3 pilot. §6.6 says no shared libs by default. Clarify scope with owner, then plan.
-3. When the owner names a project for Level 3, run the pilot end to end with them; pushing to project repos needs their explicit OK.
-4. Merge `proto/root-concepts` → `main` only when the owner says so (that deploys).
+1. **Phase 4 pilot (owner-gated):** owner picks the project. Local clones exist in `/secondary/Programming/Github/` (kabl, Mouthpiece, Kap, skilltree, EmojiType, Recall…). kabl is not in the manifest (needs an io-page/meta.json or manifest entry too). Steps: `scripts/new-project-site.sh <clone>` (local only) → owner OKs push of `website` → owner sets Pages Source = GitHub Actions → add `"website": true` to the manifest → rebuild and check federate's console line.
+2. Cert URLs when supplied.
+3. Merge `proto/root-concepts` → `main` only when the owner says so (deploys).
