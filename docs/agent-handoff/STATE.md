@@ -72,6 +72,15 @@
 - Phase 3 software index (`150e7a8`): `/projects` = parts catalogue (filter by search/pin/status, collapses to cards ≤760px), `/projects/[slug]` = part datasheet (specs, custom "front panel" screen, build log as revisions, prev/next). Both on Profile layout. `loadParts()` gives stable U-refs shared with the board. Custom heroes get legacy tokens via `src/styles/custom-page-host.css` (zero-specificity selectors). Verified in headless Chrome at 1440/390/320: no overflow (Kap's code-line overflow fixed), no console errors, filters work, Mouthpiece renders.
 - Still legacy on Base.astro: `/devlog`, `/music`.
 
+## Level 3 pilot: kabl (session 4, in progress)
+- Owner chose **kabl** and OK'd pushing its `website` branch.
+- `website` (orphan) pushed to `stcksmsh/kabl`: bootstrap commit `f27f48d` + content `9e3eda8`. It's a rack-style instrument page from kabl's README only: README screenshots, the 24 module kinds, functional cables (per docs/functional-cables), and a crate graph from the real Cargo.toml deps with transitive edges removed. Verified locally under `/kabl/` at 1440/390/320.
+- CI run 44516754380: build ✓; deploy ✗ "Ensure GitHub Pages has been enabled". **Owner step:** kabl Settings → Pages → Source "GitHub Actions" (or OK me to `gh api -X POST repos/stcksmsh/kabl/pages -f build_type=workflow`), then re-run the workflow.
+- `io-page` branch created **locally only** in the kabl clone (`5da00a6`: meta.json featured:false order 7 + notify-site.yml). **Needs owner OK to push.**
+- Then: add `{ "repo": "stcksmsh/kabl", "branch": "io-page", "contentPath": "", "enabled": true, "website": true }` to `projects.manifest.json`, run `npm run federate`, expect `✓ kabl: 0 devlog(s), website https://stcksmsh.github.io/kabl/ (public)`.
+- No GitHub release exists for kabl; the site words the tarball section conditionally.
+- Worktree `$CLAUDE_JOB_DIR/tmp/kabl-website` is attached to the kabl clone; remove it with `git -C …/kabl worktree remove` when done.
+
 ## Next exact action
 1. **Phase 4 pilot (owner-gated):** owner picks the project. Local clones exist in `/secondary/Programming/Github/` (kabl, Mouthpiece, Kap, skilltree, EmojiType, Recall…). kabl is not in the manifest (needs an io-page/meta.json or manifest entry too). Steps: `scripts/new-project-site.sh <clone>` (local only) → owner OKs push of `website` → owner sets Pages Source = GitHub Actions → add `"website": true` to the manifest → rebuild and check federate's console line.
 2. Cert URLs when supplied.
