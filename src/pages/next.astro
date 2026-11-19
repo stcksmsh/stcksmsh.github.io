@@ -40,7 +40,7 @@ const fingers = [
 
 const wide: Layout = {
   w: 1600, h: 1120,
-  chip: { x: 800, y: 560, w: 310, h: 300 },
+  chip: { x: 800, y: 560, w: 350, h: 300 },
   slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }], b: [{ x: 470, y: 1000 }, { x: 1130, y: 1000 }] },
   part: { w: 210, h: 96 },
   lanes: { l: [570, 390], r: [1030, 1210] },
@@ -121,12 +121,24 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
             <circle class="pin1" cx={b.chip.x - b.chip.w / 2 + 18} cy={b.chip.y - b.chip.h / 2 + 18} r="6" />
             <text class="chip-kv" x={b.chip.x} y={b.chip.y + (key === "wide" ? 14 : 10)}>KV</text>
             <text class="chip-sub" x={b.chip.x} y={b.chip.y + (key === "wide" ? 40 : 30)}>SWE-II</text>
-            {b.pins.map((p) => (
-              <g class="pin" data-net={p.id}>
-                <line x1={p.x} x2={p.side === "l" ? p.x - 14 : p.x + 14} y1={p.y} y2={p.y} />
-                <text x={p.side === "l" ? p.x + 10 : p.x - 10} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{p.label}</text>
-              </g>
-            ))}
+          </g>
+
+          <g class="pins">
+            {b.pins.map((p, i) => {
+              const pw = key === "wide" ? 104 : 88, ph = key === "wide" ? 30 : 24, gap = key === "wide" ? 12 : 8;
+              const bx = p.side === "l" ? p.x + gap : p.x - gap - pw;
+              const num = p.side === "l" ? i + 1 : 8 - (i - 4);
+              const n = b.parts.filter((q) => q.domains.includes(p.id)).length;
+              return (
+                <g class="pin" data-net={p.id} tabindex="0" role="button" aria-label={`Net ${p.label}: ${n} part${n === 1 ? "" : "s"}`}>
+                  <line class="leg" x1={p.x} x2={p.side === "l" ? p.x - 14 : p.x + 14} y1={p.y} y2={p.y} />
+                  <line class="bond" x1={p.x} x2={p.side === "l" ? bx : bx + pw} y1={p.y} y2={p.y} />
+                  <rect class="pad-box" x={bx} y={p.y - ph / 2} width={pw} height={ph} rx="3" />
+                  <text class="pin-no" x={p.side === "l" ? bx + 7 : bx + pw - 7} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{num}</text>
+                  <text class="pin-lbl" x={p.side === "l" ? bx + (key === "wide" ? 24 : 20) : bx + pw - (key === "wide" ? 24 : 20)} y={p.y + 4} text-anchor={p.side === "l" ? "start" : "end"}>{p.label}</text>
+                </g>
+              );
+            })}
           </g>
 
           {b.parts.map((p) => (
@@ -218,7 +230,7 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
   const probeT = document.querySelector<HTMLElement>(".probe-t")!;
   const probeD = document.querySelector<HTMLElement>(".probe-d")!;
   const idleT = probeT.textContent, idleD = probeD.textContent;
-  const labels: Record<string, string> = Object.fromEntries([...document.querySelectorAll<SVGGElement>(".pin")].map((p) => [p.dataset.net!, p.textContent!.trim()]));
+  const labels: Record<string, string> = Object.fromEntries([...document.querySelectorAll<SVGGElement>(".pin")].map((p) => [p.dataset.net!, p.querySelector(".pin-lbl")!.textContent!.trim()]));
   const clear = () => {
     document.querySelectorAll(".on, .off").forEach((el) => el.classList.remove("on", "off"));
     document.body.classList.remove("probing");
@@ -244,14 +256,20 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
     part.addEventListener("pointerleave", clear);
     part.addEventListener("blur", clear);
   });
-  document.querySelectorAll<SVGGElement>(".trace[data-part]").forEach((t) => {
-    t.addEventListener("pointerenter", () => {
-      const net = t.dataset.net!;
-      light((el) => (el as SVGElement).dataset.net === net || ((el as SVGElement).classList.contains("part") && (el as SVGElement).dataset.nets!.split(" ").includes(net)));
-      probeT.textContent = `NET ${labels[net] ?? net}`;
-      probeD.textContent = "Everything on this net lights up.";
-    });
+  // A net (one chip pin + its traces + the parts on it) lights from the pin pad or any of its traces.
+  const showNet = (net: string) => {
+    light((el) => (el as SVGElement).dataset.net === net || ((el as SVGElement).classList.contains("part") && (el as SVGElement).dataset.nets!.split(" ").includes(net)));
+    const names = [...new Set([...document.querySelectorAll<SVGAElement>("svg.board:not([hidden]) .part.on")].filter((p) => p.getClientRects().length).map((p) => p.getAttribute("aria-label")!.split(":")[0].replace(/^\S+\s/, "")))];
+    probeT.textContent = `NET ${labels[net] ?? net}`;
+    probeD.textContent = names.length ? `On this net: ${names.join(", ")}` : "Nothing on this net yet.";
+  };
+  document.querySelectorAll<SVGGElement>(".trace[data-part], .pin").forEach((t) => {
+    t.addEventListener("pointerenter", () => showNet(t.dataset.net!));
     t.addEventListener("pointerleave", clear);
+  });
+  document.querySelectorAll<SVGGElement>(".pin").forEach((p) => {
+    p.addEventListener("focus", () => showNet(p.dataset.net!));
+    p.addEventListener("blur", clear);
   });
 </script>
 
@@ -304,12 +322,19 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
 
   .chip rect { fill: var(--ink); }
   .pin1 { fill: #444; }
-  .chip-kv { font: 900 64px "Archivo", sans-serif; font-variation-settings: "wdth" 125; fill: var(--hi); text-anchor: middle; }
+  .chip-kv { font: 900 52px "Archivo", sans-serif; font-variation-settings: "wdth" 125; fill: var(--hi); text-anchor: middle; }
   .chip-sub { font: 600 15px "JetBrains Mono", monospace; fill: #bbb; text-anchor: middle; letter-spacing: .1em; }
-  .narrow .chip-kv { font-size: 40px; } .narrow .chip-sub { font-size: 11px; }
-  .pin line { stroke: var(--ink); stroke-width: 6; }
-  .pin text { font: 700 13px "JetBrains Mono", monospace; fill: #ddd; letter-spacing: .04em; }
-  .narrow .pin text { font-size: 11px; }
+  .narrow .chip-kv { font-size: 30px; } .narrow .chip-sub { font-size: 11px; }
+  .pin { cursor: crosshair; }
+  .pin .leg { stroke: var(--ink); stroke-width: 6; }
+  .pin .bond { stroke: #777; stroke-width: 1.5; }
+  .pin .pad-box { fill: #222; stroke: #555; stroke-width: 1.5; transition: fill .2s, stroke .2s; }
+  .pin .pin-no { font: 600 10px "JetBrains Mono", monospace; fill: #888; }
+  .pin .pin-lbl { font: 700 13px "JetBrains Mono", monospace; fill: #eee; letter-spacing: .04em; }
+  .narrow .pin .pin-lbl { font-size: 10.5px; } .narrow .pin .pin-no { font-size: 9px; }
+  .pin:hover .pad-box, .pin:focus .pad-box { fill: var(--hi); stroke: var(--hi); }
+  .pin:hover .pin-lbl, .pin:focus .pin-lbl, .pin:hover .pin-no, .pin:focus .pin-no { fill: var(--ink); }
+  .pin:focus { outline: none; } .pin:focus-visible .pad-box { stroke: var(--blue); stroke-width: 4; }
 
   .part { cursor: pointer; }
   .part .body { fill: var(--paper); stroke: var(--ink); stroke-width: 2.5; transition: fill .2s; }
@@ -331,7 +356,7 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
   .probing .trace.off, .probing .part.off { opacity: .22; }
   .probing .pin.off { opacity: .35; }
   .trace.on .cu { stroke: var(--blue); stroke-width: 4.5; }
-  .pin.on line { stroke: var(--blue); } .pin.on text { fill: var(--hi); }
+  .pin.on .leg, .pin.on .bond { stroke: var(--blue); } .pin.on .pad-box { fill: var(--hi); stroke: var(--blue); } .pin.on .pin-lbl, .pin.on .pin-no { fill: var(--ink); }
 
   /* Structured profile under the board */
   .sheet { max-width: 1544px; margin: 28px auto 0; background: var(--paper); border: 2px solid var(--ink); display: grid; grid-template-columns: 1.1fr 1fr 1fr; }
