@@ -2,12 +2,14 @@
 import Base from "../layouts/Base.astro";
 import { getCollection } from "astro:content";
 import { padForTicker } from "../lib/ticker";
+import { isListed } from "../lib/listing";
 
 let projects: any[] = [];
 try {
   const all = await getCollection("projects");
   projects = all
     .map((p) => p.data)
+    .filter(isListed)
     .sort((a, b) => Number(b.featured) - Number(a.featured) || a.order - b.order);
 } catch {}
 
@@ -50,8 +52,9 @@ const nav = [
             class="card"
             style={p.accent ? `--accent-l:${p.accent[0]};--accent-c:${p.accent[1]};--accent-h:${p.accent[2]};` : ""}
           >
-            <a href={`/projects/${p.slug}`}>
-              <span class="card-status coord">{p.status}</span>
+            {/* Level 3 projects link straight to their own site. */}
+            <a href={p.url ?? `/projects/${p.slug}`}>
+              <span class="card-status coord">{p.status}{p.url && " · own site ↗"}</span>
               <h3>{p.title}</h3>
               <p class="card-tag">{p.tagline}</p>
               <div class="ticker-viewport" aria-hidden="true">

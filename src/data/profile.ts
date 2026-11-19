@@ -2,6 +2,7 @@
 // CV facts come from src/content/cv (owner: use as is, see docs/agent-handoff/CONTENT_AUDIT.md).
 // Projects come from federation but are optional: the root must render without them.
 import { getCollection, render } from "astro:content";
+import { isListed } from "../lib/listing";
 
 export const identity = {
   name: "Kosta Vukićević",
@@ -63,11 +64,11 @@ export async function loadProfile() {
     by("experience").map(async (e) => ({ ...e.data, Body: e.body?.trim() ? (await render(e)).Content : null, long: (e.body?.length ?? 0) > 400 })),
   );
 
-  let projects: { slug: string; title: string; tagline: string; status: string; stack: string[]; repo: string; domains: string[] }[] = [];
+  let projects: { slug: string; title: string; tagline: string; status: string; stack: string[]; repo: string; url?: string; domains: string[] }[] = [];
   try {
     projects = (await getCollection("projects"))
       .map((p) => ({ ...p.data, domains: projectDomains[p.data.slug] ?? [] }))
-      .filter((p) => p.featured)
+      .filter((p) => p.featured && isListed(p))
       .sort((a, b) => a.order - b.order);
   } catch (err) {
     console.warn("[profile] projects collection unavailable, omitting selected work:", err);

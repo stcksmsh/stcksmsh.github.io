@@ -6,7 +6,8 @@
     "federate": "tsx scripts/federate.ts",
     "dev": "npm run federate && astro dev",
     "build": "npm run federate && astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "test:publication": "tsx scripts/publication.test.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "^3.1.9",

@@ -9,8 +9,14 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import { dirname, extname } from "node:path";
 import { z } from "zod";
 import manifest from "../projects.manifest.json" assert { type: "json" };
+import { RAW, fetchPublication, publicationFields, websiteBranch } from "./publication";
 
-const RAW = "https://raw.githubusercontent.com";
+// Attach GITHUB_TOKEN (set by the deploy workflow) to api.github.com calls,
+// so they count against the authenticated rate limit. Unset locally: anonymous.
+const GH_HEADERS: Record<string, string> = {
+  Accept: "application/vnd.github+json",
+  ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+};
 
 // ---- contracts every io-page branch must honor ----
 const MetaSchema = z.object({
@@ -24,6 +30,10 @@ const MetaSchema = z.object({
   accent: z.tuple([z.number(), z.number(), z.number()]).optional(), // OKLCH [L C H]
   featured: z.boolean().default(false),
   order: z.number().default(0),
+  // optional Level 3 fields; a website branch's publication.json overrides them
+  url: z.string().url().optional(),
+  category: z.enum(["software", "art", "music", "app"]).optional(),
+  visibility: z.enum(["public", "unlisted"]).optional(),
 });
 
 const ManifestSchema = z.object({
@@ -34,6 +44,9 @@ const ManifestSchema = z.object({
       branch: z.string().default("io-page"),
       contentPath: z.string().default(""), // subdir inside branch, if any
       enabled: z.boolean().default(true),
+      // Level 3 opt-in: true = read publication.json from the `website`
+      // branch, a string = from that branch instead. Metadata only.
+      website: z.union([z.boolean(), z.string()]).optional(),
     })
   ),
 });
@@ -65,7 +78,7 @@ async function fetchBinary(url: string): Promise<Buffer | null> {
 async function listDevlogs(repo: string, branch: string, path: string) {
   const dir = [path, "devlogs"].filter(Boolean).join("/");
   const api = `https://api.github.com/repos/${repo}/contents/${dir}?ref=${branch}`;
-  const res = await fetch(api, { headers: { "Accept": "application/vnd.github+json" } });
+  const res = await fetch(api, { headers: GH_HEADERS });
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`${res.status} listing ${api}`);
   const items = (await res.json()) as Array<{ name: string; type: string }>;
@@ -76,7 +89,7 @@ async function listDevlogs(repo: string, branch: string, path: string) {
 // page/ bundle (unknown file names/nesting up front, unlike devlogs/*.md).
 async function listTree(repo: string, branch: string) {
   const api = `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`;
-  const res = await fetch(api, { headers: { "Accept": "application/vnd.github+json" } });
+  const res = await fetch(api, { headers: GH_HEADERS });
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`${res.status} listing tree ${api}`);
   const data = (await res.json()) as { tree: Array<{ path: string; type: string }>; truncated?: boolean };
@@ -144,8 +157,14 @@ async function main() {
     // fail LOUD on a malformed project rather than corrupt the site
     const meta = MetaSchema.parse(JSON.parse(metaRaw));
 
+    // Level 3: merge publication.json from the website branch, if opted in.
+    // fetchPublication never throws — a bad/missing file only warns.
+    const wb = websiteBranch(p.website);
+    const pub = wb ? await fetchPublication(p.repo, wb) : null;
+    const record = pub ? { ...meta, ...publicationFields(pub) } : meta;
+
     // write project record as a data-collection JSON entry
-    await writeFile(`${outProjects}/${meta.slug}.json`, JSON.stringify(meta, null, 2));
+    await writeFile(`${outProjects}/${meta.slug}.json`, JSON.stringify(record, null, 2));
 
     // pull its devlogs into a per-project folder
     const files = await listDevlogs(p.repo, p.branch, p.contentPath);
@@ -160,7 +179,7 @@ async function main() {
     }
 
     const hasCustomPage = await federateCustomPage(p.repo, p.branch, p.contentPath, meta.slug);
-    console.log(`✓ ${meta.slug}: ${files.length} devlog(s)${hasCustomPage ? ", custom page" : ""}`);
+    console.log(`✓ ${meta.slug}: ${files.length} devlog(s)${hasCustomPage ? ", custom page" : ""}${pub ? `, website ${pub.url} (${pub.visibility})` : ""}`);
   }
 
   await writeFile("src/content/_federation.json", JSON.stringify({ builtAt: new Date().toISOString(), index }, null, 2));

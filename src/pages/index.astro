@@ -165,7 +165,7 @@ const isAuto = (org?: string) => /rivian|volkswagen/i.test(org ?? "");
             {c.projects.map((p, i) => (
               <li id={`an-${p.slug}`} data-domains={p.domains.join(" ")} data-label={`AN-${String(i + 1).padStart(2, "0")} · ${p.title}`}>
                 <span class="mono an">AN-{String(i + 1).padStart(2, "0")}</span>
-                <a href={`/projects/${p.slug}`}><b>{p.title}</b></a>
+                <a href={p.url ?? `/projects/${p.slug}`}><b>{p.title}</b></a>
                 <span class="tag">{p.tagline}</span>
                 <span class="mono st">{p.stack.join(" · ")}</span>
               </li>
