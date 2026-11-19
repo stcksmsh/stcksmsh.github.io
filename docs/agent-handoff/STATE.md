@@ -120,11 +120,14 @@
 
 ## Session 6d: Kap Level 3 (owner: "Make one for KAP and that's the end for now")
 - `stcksmsh/Kap` `website`: `a47c2a6` bootstrap → `c5a23c7` content, **pushed**; worktree `../Kap-website`; Pages enabled (workflow). Deploy run 44600543596 rejected: **owner adds `website` to Kap's github-pages deployment branches**, then rerun, live-check, add `"website": true` to the Kap manifest entry, push main.
+- **LIVE 2026-11-19** at https://kostavukicevic.com/Kap/ (owner added env rule; rerun ✓; live-checked 1440/390/320 + reduced motion, interactions pass). Manifest `"website": true` pushed to main.
 - Kap has no README: content from code + io-page devlogs. Ported logic: hero = drawWavyWater startup fill, working widget (default quick-adds 100/250/500/750/1000, messages, theme colours) + glass, goal calculator = calculateOptimalWaterIntake with AppSettings units, reminder planner = NextTickCalculator (defaults 90 min, 08:00–22:00, 5-min flex). Not on Google Play: build-from-source section. Wear OS + Health Connect marked "in progress" (code: HC write/read functions exist but nothing calls them; watch round trip never worked per devlog).
 - Verified locally 1440/390/320 + reduced motion, Playwright interaction script passes.
 - Note for owner: Kap io-page meta.json tagline says "streaks, and Health Connect sync" — no streak code exists and HC isn't syncing. The root site card still shows that tagline.
 
 ## Next exact action
+(Owner: "that's the end for now" after Kap. Level 3 sites live: kabl, aegis, EmojiType, Mouthpiece, Kap.)
+
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
 3. Optional: regenerate `public/og.png` (viewport screenshot, not fullPage). Legacy `/devlog` and `/music` redesign is a later task (Phase 5 for music).

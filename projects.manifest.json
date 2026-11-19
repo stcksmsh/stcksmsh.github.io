@@ -39,7 +39,8 @@
       "repo": "stcksmsh/Kap",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/BeogradPlusPlus",
