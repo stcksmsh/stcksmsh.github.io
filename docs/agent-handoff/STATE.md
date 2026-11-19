@@ -111,6 +111,13 @@
 - **LIVE 2026-11-19** at https://kostavukicevic.com/Mouthpiece/ (owner added the env rule; rerun ✓; live-checked 1440/390/320 + reduced motion, interactions pass). Manifest `"website": true` pushed to main. The root `/projects/mouthpiece` page still builds with its Level 2 front panel and links out.
 - Pages enabled (workflow). Verified locally at 1440/390/320 + reduced motion; interaction script passes. Deploy run 44594422689 rejected: **owner adds `website` to Mouthpiece's github-pages deployment branches**, then rerun, live-check, add `"website": true` to the Mouthpiece manifest entry, push main.
 
+## Session 6c: Mouthpiece site rewrite (owner: "too simple… should make ANY word")
+- `website` `aa51ad8`, pushed + **live**. Owner chose to include every recording (Obama, Churchill, SCOTUS too) and OK'd a ~4–5 MB bank (actual: 11 MB hosted, lazy: index 120 KB gz + cmu 865 KB gz + ~115 KB chunks on demand; a sentence fetched 9 chunks).
+- `tools/export_bank.py` (run with `../Mouthpiece/.venv/bin/python`, reads `../Mouthpiece/db` + `corpus/`, 40 s): 3,000 top words, 650 phrases, 3,510 syllable shapes (1 each), 39 phones (4 each), 64 Opus sprites, 33 sources (French LibriVox excluded). Offsets verified after Opus round trip.
+- `src/engine.js` ports match.py/phonemes.py; `src/render.js` follows assemble.py. No whole-word lemma fallback (deliberate); web-only "sounded out" fallback for words CMUdict can't place. Node test: `$CLAUDE_JOB_DIR/tmp/eng-test.mjs`.
+- Verified live 1440/390/320 + reduced motion, Playwright e2e (say, examples, unknown words, granularity, select + source link, WAV + manifest download, reroll). Owner hasn't listened yet.
+- Open (owner): root `/projects/mouthpiece` still shows the old Level 2 "front panel" (15-word demo from io-page `page/`) under the link-out; the other Level 3 projects have no front panel. Remove `page/` from Mouthpiece's io-page (pushes to that repo) to match?
+
 ## Next exact action
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
