@@ -44,6 +44,7 @@ const projectDomains: Record<string, string[]> = {
   kap: ["android"],
   "sinteza-viz": ["creative", "web", "audio"],
   "beograd-plus-plus": ["android"],
+  kabl: ["audio", "systems", "creative"],
 };
 
 type ProjectData = CollectionEntry<"projects">["data"];

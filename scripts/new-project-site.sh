@@ -58,7 +58,8 @@ trap 'rm -rf "$stage"' EXIT
 mkdir "$stage/tree"
 cp -R "$template/." "$stage/tree/"
 rm -rf "$stage/tree/node_modules" "$stage/tree/dist"
-grep -rlZ -e __REPO_NAME__ -e __BASE_PATH__ -e __SITE_URL__ "$stage/tree" | xargs -0 -r sed -i \
+# README.md documents the placeholders themselves, so it is left as is.
+grep -rlZ --exclude=README.md -e __REPO_NAME__ -e __BASE_PATH__ -e __SITE_URL__ "$stage/tree" | xargs -0 -r sed -i \
   -e "s|__REPO_NAME__|$repo|g" -e "s|__BASE_PATH__|$base|g" -e "s|__SITE_URL__|$site_url|g"
 
 export GIT_INDEX_FILE="$stage/index"
