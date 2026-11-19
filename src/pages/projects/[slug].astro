@@ -71,6 +71,12 @@ const nav = [
     </ul>
   </nav>
 
+  {project.url && (
+    <p class="shell site-link">
+      <a href={project.url}>Visit the project site →</a>
+    </p>
+  )}
+
   {hasCustomPage ? (
     <div
       id="project-custom-root"
@@ -213,6 +219,17 @@ const nav = [
   .project-hero-inner .ticker-viewport { margin-top: 1.5rem; }
   .stack { list-style: none; }
   .stack li { font-size: var(--step--1); color: var(--ink-faint); border: var(--border); padding: 0.1rem 0.5rem; border-radius: var(--radius); white-space: nowrap; }
+  /* Level 3: the project has its own independently deployed site. */
+  .site-link { margin-top: 1rem; position: relative; z-index: 3; }
+  .site-link a {
+    display: inline-block; padding: 0.7rem 1.2rem;
+    color: var(--accent); font-size: var(--step-1);
+    background: var(--bg-glass);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--border); border-radius: var(--radius-panel);
+    box-shadow: var(--panel-highlight), var(--panel-shadow);
+  }
+  .site-link a:hover { border-color: var(--accent); text-decoration: none; }
   .project-links { display: flex; gap: 1.5rem; margin: 1.5rem 0 0.5rem; }
   .project-links a { color: var(--accent); }
 
