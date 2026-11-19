@@ -2,7 +2,7 @@
 
 > Restart checkpoint. Update before clearing/restarting the overseer. Concise and factual. Verify against `git log` / the build before trusting it.
 
-## Current status (2026-11-19, session 3)
+## Current status (2026-11-19, session 4)
 
 - **Repo:** `stcksmsh/stcksmsh.github.io` (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`, deploys to GitHub Pages on push to `main`).
 - **Work branch:** `proto/root-concepts`. **Local only, never pushed.** It branched from `main` @ `dfe539b`; all work below lives there. Merging to `main` = production deploy, which is owner-gated.
@@ -57,7 +57,7 @@
 
 ### OPEN (owner)
 - Which projects get their own site (Level 3).
-- Certifications: is "DeepLearning.AI TensorFlow Developer" the Coursera specialization (doesn't expire) or the discontinued Google exam cert? LinkedIn wasn't readable here (Chrome extension not connected).
+- Certification links: owner wants them linked like on LinkedIn. Code done (`url` field on cv entries, `6af4b83`); **needs the two credential URLs from the owner** → set `url:` in `src/content/cv/cert-*.md`. Chrome extension still not connected, LinkedIn unreadable here.
 - Datasheet joke labels ("Ordering information", "In production") on the CV/home.
 - CV summary paragraph: dropped because the old one overstated "IOI honors"; supply one if wanted.
 - 1- vs 2-page CV; `public/demo/` commit; merge/deploy timing; custom domain/DNS (owner-gated).
@@ -67,6 +67,7 @@
 - If web fonts fail to load, the homepage intro text can overlap the chip (fallback metrics are wider). Low priority; consider a `size-adjust` fallback.
 
 ## Next exact action
-1. Get owner feedback on the board as the live homepage (preview `/` locally). Likely asks: more motion/creativity, wording.
-2. When the owner names a project for Level 3, run the pilot end to end with them; pushing to project repos needs their explicit OK.
-3. Merge `proto/root-concepts` → `main` only when the owner says so (that deploys).
+1. Owner: "site is OK" (session 4). Fill cert URLs when supplied.
+2. Owner asked about "libs/rework of per-project IO pages" as next step. Not in the brief as such: brief §9 has Phase 2 polish (OG/meta, sitemap, 404), Phase 3 software index (redesign `/projects` + per-project pages, off `Base.astro`), Phase 4 Level 3 pilot. §6.6 says no shared libs by default. Clarify scope with owner, then plan.
+3. When the owner names a project for Level 3, run the pilot end to end with them; pushing to project repos needs their explicit OK.
+4. Merge `proto/root-concepts` → `main` only when the owner says so (that deploys).
