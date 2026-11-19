@@ -27,7 +27,7 @@ const parts: PartInput[] = [
     domains: ["math", "systems"], detail: `${e.title} — ${e.org} (${range(e.start, e.end)})`,
   })),
   ...c.projects.map((p, i) => ({
-    id: `p-${p.slug}`, ref: `U${i + 2}`, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: `/projects/${p.slug}`,
+    id: `p-${p.slug}`, ref: `U${i + 2}`, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
     domains: p.domains, detail: `${p.tagline}  [${p.stack.join(" · ")}]`,
   })),
 ];
@@ -180,7 +180,7 @@ const partBy = Object.fromEntries(parts.map((p) => [p.id, p]));
           <h2 id="sel-h"><span class="n mono">4</span>Selected work</h2>
           <ol class="apps">
             {c.projects.map((p, i) => (
-              <li data-part={`p-${p.slug}`}><span class="mono an">U{i + 2}</span><a href={`/projects/${p.slug}`}><b>{p.title}</b></a><span class="tag">{p.tagline}</span><span class="mono st">{p.stack.join(" · ")}</span></li>
+              <li data-part={`p-${p.slug}`}><span class="mono an">U{i + 2}</span><a href={p.url ?? `/projects/${p.slug}`}><b>{p.title}</b></a><span class="tag">{p.tagline}</span><span class="mono st">{p.stack.join(" · ")}</span></li>
             ))}
           </ol>
         </div>

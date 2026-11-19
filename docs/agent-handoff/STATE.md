@@ -70,6 +70,11 @@ For each active task record:
 
 ## Last session checkpoint
 
+- 2026-11-20 (round 2):
+  - Owner: the CV is final for now, and the homepage should get a more artistic skin. Built the board skin at `/next` (preview, noindex); the datasheet homepage stays at `/` until the owner compares them.
+  - Level 3 publication architecture merged (`e3613c6`). Covers `publication.json` on an opted-in `website` branch, link-outs, unlisted filtering, the template in `docs/project-repo-example/website/`, and `scripts/new-project-site.sh`. Status: PROPOSED/pilot. No project repos touched; the owner picks projects later.
+  - Pre-existing legacy issue, not addressed: one Kap devlog has a long `<code>` line that overflows `/projects/kap` on phones.
+
 - 2026-11-20: owner feedback round 1 applied (`bec515e`): pin-configuration figure replaces block diagram, timeline ruler, pointer/scroll motion (reduced-motion safe), generalist copy, grouped skills (new optional `items` field on cv schema). Certifications unverified: owner unsure if still valid, LinkedIn not readable from here.
 
 - 2026-11-20 (overnight): Profile layout + data module, CV prototypes, independent review + fixes, keyboard/print/overflow checks. Branch `proto/root-concepts`, local only, not pushed.
