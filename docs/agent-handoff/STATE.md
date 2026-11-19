@@ -118,6 +118,12 @@
 - Verified live 1440/390/320 + reduced motion, Playwright e2e (say, examples, unknown words, granularity, select + source link, WAV + manifest download, reroll). Owner hasn't listened yet.
 - Open (owner): root `/projects/mouthpiece` still shows the old Level 2 "front panel" (15-word demo from io-page `page/`) under the link-out; the other Level 3 projects have no front panel. Remove `page/` from Mouthpiece's io-page (pushes to that repo) to match?
 
+## Session 6d: Kap Level 3 (owner: "Make one for KAP and that's the end for now")
+- `stcksmsh/Kap` `website`: `a47c2a6` bootstrap → `c5a23c7` content, **pushed**; worktree `../Kap-website`; Pages enabled (workflow). Deploy run 44600543596 rejected: **owner adds `website` to Kap's github-pages deployment branches**, then rerun, live-check, add `"website": true` to the Kap manifest entry, push main.
+- Kap has no README: content from code + io-page devlogs. Ported logic: hero = drawWavyWater startup fill, working widget (default quick-adds 100/250/500/750/1000, messages, theme colours) + glass, goal calculator = calculateOptimalWaterIntake with AppSettings units, reminder planner = NextTickCalculator (defaults 90 min, 08:00–22:00, 5-min flex). Not on Google Play: build-from-source section. Wear OS + Health Connect marked "in progress" (code: HC write/read functions exist but nothing calls them; watch round trip never worked per devlog).
+- Verified locally 1440/390/320 + reduced motion, Playwright interaction script passes.
+- Note for owner: Kap io-page meta.json tagline says "streaks, and Health Connect sync" — no streak code exists and HC isn't syncing. The root site card still shows that tagline.
+
 ## Next exact action
 1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
 2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
