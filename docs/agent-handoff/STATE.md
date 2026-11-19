@@ -91,8 +91,13 @@
 - ~~Open bug: invisible traces~~ **Not a bug** (session 5): Playwright `fullPage` screenshots drop the traces; plain viewport/clip screenshots after ~4.5 s (the draw-in animation) show them, with and without reduced motion. **Use viewport screenshots for the board, not fullPage.** The 11-slot board was checked at 1440 and 390: all 10 parts (incl. Skilltree and kabl U8) are placed and wired, with no overflow or errors.
 - `proto/root-concepts` pushed to origin (owner: "push everything"). Not merged to main.
 
+## DEPLOYED (2026-11-19, session 5)
+- Owner said "Merge it". `proto/root-concepts` merged into `main` as `50d56e9` (no-ff; main was an ancestor, 35 commits). Full local build + `test:publication` 8/8 before push.
+- Deploy run 44561229186 ✓. CI federate: all 9 projects, `mouthpiece … custom page`, `kabl … website https://kostavukicevic.com/kabl/ (public)`.
+- Live check on https://kostavukicevic.com (1440 + 390): `/` (10 parts), `/cv/`, `/projects/`, `/projects/mouthpiece/`, `/projects/kabl/`, `/devlog/`, `/music/` all 200, with no overflow or console errors. Unknown paths return the datasheet 404 (status 404). `/sitemap.xml` and `/og.png` are served.
+- Work continues on `main` from here (proto branch fast-forwarded to it). Minor: `public/og.png` is a pre-kabl board screenshot (9 parts); regenerate with a viewport screenshot when convenient.
+
 ## Next exact action
-1. (done) kabl site live.
-2. Cert URLs when supplied (`url:` in `src/content/cv/cert-*.md`).
-3. Merge `proto/root-concepts` → `main` only when the owner says so (deploys the new home/CV/catalogue and kabl's listing).
-4. Later: `/devlog` and `/music` are still legacy on Base.astro; music site is a separate Phase 5 task.
+1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
+2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
+3. Optional: regenerate `public/og.png` (viewport screenshot, not fullPage). Legacy `/devlog` and `/music` redesign is a later task (Phase 5 for music).
