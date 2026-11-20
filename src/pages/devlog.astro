@@ -1,139 +1,215 @@
 ---
-import Base from "../layouts/Base.astro";
-import DevlogFeed from "../components/islands/DevlogFeed.tsx";
+// Build log: every federated devlog entry across all parts, as one revision
+// history. Datasheet family, Profile layout (no visualizer, no player).
+// Part refs (U2…) are the same as on /projects and the homepage board.
+import Profile from "../layouts/Profile.astro";
 import { getCollection } from "astro:content";
-import type { DevlogFeedEntry } from "../components/islands/DevlogFeed.tsx";
+import { identity as id, loadParts } from "../data/profile";
+import "../styles/catalogue.css";
 
-let entries: DevlogFeedEntry[] = [];
+type Row = { id: string; title: string; date: Date; tags: string[]; excerpt: string; href: string; slug: string; part: string; ref: string };
+let rows: Row[] = [];
+let parts: Awaited<ReturnType<typeof loadParts>> = [];
 try {
-  const projects = await getCollection("projects");
-  const byslug = new Map(projects.map((p) => [p.data.slug, p.data]));
-
-  const devlogs = await getCollection("devlogs", (e) => !e.data.draft);
-  entries = devlogs
-    .map((entry) => {
-      const project = byslug.get(entry.data.project);
-      const anchor = entry.id.replace(/\.md$/, "").replace(/\//g, "--");
-      const excerpt = entry.body
-        .replace(/^#.*$/m, "")
-        .replace(/[#*`_>]/g, "")
+  parts = await loadParts();
+  const bySlug = new Map(parts.map((p) => [p.slug, p]));
+  const logs = await getCollection("devlogs", (e) => !e.data.draft);
+  rows = logs
+    .map((e) => {
+      const p = bySlug.get(e.data.project);
+      const text = (e.body ?? "")
+        .replace(/^#.*$/gm, "")
+        .replace(/```[\s\S]*?```/g, "")
         .replace(/\[(.*?)\]\(.*?\)/g, "$1")
+        .replace(/[#*`_>]/g, "")
         .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 180);
+        .trim();
+      const cut = text.length > 220 ? text.slice(0, 220).replace(/\s+\S*$/, "") + "…" : text;
+      const anchor = e.id.replace(/\.md$/, "").replace(/\//g, "--");
       return {
-        id: entry.id,
-        title: entry.data.title,
-        date: entry.data.date.toISOString(),
-        tags: entry.data.tags,
-        excerpt: excerpt.length === 180 ? excerpt + "…" : excerpt,
-        href: `/projects/${entry.data.project}#${anchor}`,
-        project: {
-          slug: entry.data.project,
-          title: project?.title ?? entry.data.project,
-          accent: project?.accent,
-        },
+        id: e.id, title: e.data.title, date: e.data.date, tags: e.data.tags.filter((t) => t !== "devlog" && t !== e.data.project),
+        excerpt: cut, href: `/projects/${e.data.project}#${anchor}`, slug: e.data.project,
+        part: p?.title ?? e.data.project, ref: p?.ref ?? "U?",
       };
     })
-    .sort((a, b) => b.date.localeCompare(a.date));
-} catch {}
+    .sort((a, b) => b.date.valueOf() - a.date.valueOf() || a.title.localeCompare(b.title));
+} catch (err) {
+  console.warn("[devlog] collections unavailable:", err);
+}
 
-const nav = [
-  ["projects", "/projects"],
-  ["music", "/music"],
-  ["devlog", "/devlog"],
-  ["cv", "/cv"],
-];
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const ym = (d: Date) => d.toISOString().slice(0, 7);
+const monthName = (k: string) => new Date(`${k}-01T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+
+// Months from the first entry to the latest, including empty ones, for the activity chart.
+const months: { key: string; n: number }[] = [];
+if (rows.length) {
+  const last = rows[0].date, first = rows[rows.length - 1].date;
+  let y = first.getUTCFullYear(), m = first.getUTCMonth();
+  while (y < last.getUTCFullYear() || (y === last.getUTCFullYear() && m <= last.getUTCMonth())) {
+    const key = `${y}-${String(m + 1).padStart(2, "0")}`;
+    months.push({ key, n: rows.filter((r) => ym(r.date) === key).length });
+    m++; if (m === 12) { m = 0; y++; }
+  }
+}
+const maxN = Math.max(1, ...months.map((m) => m.n));
+const groups = [...new Set(rows.map((r) => ym(r.date)))].map((k) => ({ key: k, rows: rows.filter((r) => ym(r.date) === k) }));
+const logged = parts.filter((p) => rows.some((r) => r.slug === p.slug));
+const CW = 14, CH = 64;
 ---
-<Base title="Devlog — Kosta Vukićević" description="Cross-project build log, reverse-chronological.">
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
+<Profile title={`Build log — ${id.name}`} description="Every build-log entry across my projects, newest first." fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <a href="/" class="logo" aria-label="Homepage">KV</a>
+      <nav aria-label="Primary" class="mono">
+        <a href="/">Home</a><a href="/projects">Projects</a><a href="/music">Music</a><a href="/devlog" aria-current="page">Build log</a><a href="/cv">CV</a>
+      </nav>
+    </header>
+    <main id="main">
+      <header class="head">
+        <p class="eyebrow mono">Revision history · {rows.length} entries · {logged.length} parts</p>
+        <h1>Build log</h1>
+        <p class="lede">What changed, when, and why, across every part in the <a href="/projects">catalogue</a>. Each entry is written in its project's own repository and pulled in at build time.</p>
+      </header>
 
-  <header class="shell devlog-hero">
-    <span class="coord">// DEVLOG</span>
-    <h1>What's shipping</h1>
-    <p class="lede">Reverse-chron pulse across every project on this site — pulled straight from each repo's <code>io-page</code> branch at build time.</p>
-  </header>
+      {rows.length === 0 ? (
+        <section class="block"><p class="mono">No build-log entries in this build.</p></section>
+      ) : (
+        <>
+          <section class="block" aria-labelledby="a-h">
+            <h2 id="a-h"><span class="n mono">1</span>Activity</h2>
+            <div class="chartwrap">
+              <svg class="chart" viewBox={`0 0 ${months.length * CW} ${CH + 18}`} preserveAspectRatio="none" role="img" aria-label={`Entries per month, ${months[0].key} to ${months[months.length - 1].key}`} style={`--cols:${months.length}`}>
+                {months.map((m, i) => (
+                  <g>
+                    <rect x={i * CW + 2} y={CH - (m.n / maxN) * (CH - 4)} width={CW - 4} height={(m.n / maxN) * (CH - 4)} class={m.n ? "bar" : "bar zero"}><title>{monthName(m.key)}: {m.n} {m.n === 1 ? "entry" : "entries"}</title></rect>
+                    <rect x={i * CW + 2} y={CH} width={CW - 4} height="2" class="tick" />
+                  </g>
+                ))}
+              </svg>
+              <div class="axis mono" aria-hidden="true">
+                <span>{months[0].key}</span><span>{months[months.length - 1].key}</span>
+              </div>
+            </div>
+          </section>
 
-  <section class="shell" style="margin-top: 3rem;">
-    {entries.length === 0 ? (
-      <p class="empty coord">// no devlog entries yet — push one to a project's io-page branch</p>
-    ) : (
-      <DevlogFeed client:load entries={entries} />
-    )}
-  </section>
-</Base>
+          <section class="block" aria-labelledby="r-h">
+            <h2 id="r-h"><span class="n mono">2</span>Revisions</h2>
+            <form class="filters mono" id="filters" hidden onsubmit="return false" aria-label="Filter entries">
+              <label class="search"><span class="vh">Search</span><input type="search" name="q" placeholder="Search titles, text, tags…" autocomplete="off" /></label>
+              <fieldset>
+                <legend>Part</legend>
+                {logged.map((p) => <button type="button" data-part={p.slug} aria-pressed="false"><b>{p.ref}</b> {p.title}</button>)}
+              </fieldset>
+              <p class="count" aria-live="polite"><span id="shown">{rows.length}</span> of {rows.length} shown <button type="reset" class="clear">Clear</button></p>
+            </form>
+
+            {groups.map((g) => (
+              <section class="month" data-month={g.key} aria-label={monthName(g.key)}>
+                <h3 class="mlabel mono">{monthName(g.key)}</h3>
+                <ol class="revs">
+                  {g.rows.map((r) => (
+                    <li class="rev" data-part={r.slug} data-text={`${r.title} ${r.excerpt} ${r.tags.join(" ")} ${r.part}`.toLowerCase()}>
+                      <time class="mono" datetime={r.date.toISOString()}>{ymd(r.date)}</time>
+                      <a class="ref mono" href={`/projects/${r.slug}`} title={r.part}>{r.ref}</a>
+                      <div class="body">
+                        <p class="part mono">{r.part}</p>
+                        <a class="title" href={r.href}>{r.title}</a>
+                        <p class="ex">{r.excerpt}</p>
+                        {r.tags.length > 0 && <p class="tags mono">{r.tags.join(" · ")}</p>}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))}
+            <p class="none mono" id="none" hidden>No entry matches these filters.</p>
+          </section>
+        </>
+      )}
+    </main>
+  </div>
+</Profile>
+
+<script>
+  const form = document.getElementById("filters") as HTMLFormElement | null;
+  if (form) {
+    form.hidden = false;
+    const revs = [...document.querySelectorAll<HTMLLIElement>("li.rev")];
+    const months = [...document.querySelectorAll<HTMLElement>("section.month")];
+    const shown = document.getElementById("shown")!;
+    const none = document.getElementById("none")!;
+    const q = form.elements.namedItem("q") as HTMLInputElement;
+    const apply = () => {
+      const text = q.value.trim().toLowerCase();
+      const ps = [...form.querySelectorAll<HTMLButtonElement>('button[data-part][aria-pressed="true"]')].map((b) => b.dataset.part!);
+      let n = 0;
+      for (const r of revs) {
+        const ok = (!text || r.dataset.text!.includes(text)) && (!ps.length || ps.includes(r.dataset.part!));
+        r.hidden = !ok;
+        if (ok) n++;
+      }
+      for (const m of months) m.hidden = !m.querySelector("li.rev:not([hidden])");
+      shown.textContent = String(n);
+      none.hidden = n > 0;
+    };
+    form.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>("button[aria-pressed]");
+      if (!b) return;
+      b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+      apply();
+    });
+    q.addEventListener("input", apply);
+    form.addEventListener("reset", () => {
+      form.querySelectorAll("button[aria-pressed]").forEach((b) => b.setAttribute("aria-pressed", "false"));
+      setTimeout(apply);
+    });
+  }
+</script>
 
 <style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
+  .chartwrap { max-width: 100%; }
+  .chart { display: block; width: 100%; height: 96px; }
+  .bar { fill: var(--ds-ink); }
+  .bar:hover { fill: var(--ds-blue); }
+  .bar.zero { fill: none; }
+  .tick { fill: var(--ds-rule); }
+  .axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--ds-dim); margin-top: 2px; }
 
-  /* Shared with .projects-hero/.music-hero so the three nav-adjacent pages
-     don't jump height on navigation (jarring with View Transitions). */
-  .devlog-hero {
-    padding-top: clamp(2rem, 5vw, 4rem);
-    min-height: clamp(420px, 46vh, 520px);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .devlog-hero h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
-  .devlog-hero .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
-  .devlog-hero .lede code { color: var(--accent); font-size: 0.85em; }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: end; margin: 0 0 8px; font-size: 13px; }
+  .search { flex: 1 1 14rem; display: flex; }
+  .search input { flex: 1; font: inherit; border: 2px solid var(--ds-ink); background: #fff; padding: 6px 10px; min-width: 0; }
+  fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  legend { float: left; margin-right: 6px; color: var(--ds-dim); text-transform: uppercase; letter-spacing: .08em; font-size: 11px; }
+  .filters button { font: 600 12px/1.6 "JetBrains Mono", monospace; letter-spacing: .02em; border: 1.5px solid var(--ds-ink); background: var(--ds-paper); padding: 2px 8px; cursor: pointer; color: var(--ds-ink); }
+  .filters button[aria-pressed="true"] { background: var(--ds-ink); color: var(--ds-hi); }
+  .filters button:hover { background: var(--ds-hi); color: var(--ds-ink); }
+  .count { margin: 0; color: var(--ds-dim); flex-basis: 100%; }
+  .count .clear { margin-left: 8px; }
 
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+  .month { margin-top: 18px; }
+  .month[hidden] { display: none; }
+  .mlabel { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; margin: 0; padding: 6px 0; border-bottom: 2px solid var(--ds-ink); position: sticky; top: 0; background: var(--ds-paper); z-index: 1; }
+  .revs { list-style: none; margin: 0; padding: 0; }
+  .rev { display: grid; grid-template-columns: 6.5em 3.4em minmax(0, 1fr); gap: 0 12px; padding: 14px 0; border-bottom: 1px solid var(--ds-rule); }
+  .rev[hidden] { display: none; }
+  .rev:hover { background: linear-gradient(90deg, var(--ds-hi), transparent 45%); }
+  .rev time { font-size: 13px; padding-top: 3px; }
+  .ref { font-weight: 700; font-size: 13px; color: var(--ds-ink); text-decoration: none; border: 1.5px solid var(--ds-ink); align-self: start; text-align: center; padding: 1px 0; margin-top: 1px; }
+  .ref:hover { background: var(--ds-ink); color: var(--ds-hi); }
+  .part { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ds-dim); }
+  .title { font-weight: 800; font-size: 19px; line-height: 1.2; color: var(--ds-ink); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .title:hover { color: var(--ds-blue); }
+  .ex { margin: 4px 0 0; max-width: 72ch; overflow-wrap: anywhere; }
+  .body { min-width: 0; overflow-wrap: anywhere; }
+  .tags { margin: 4px 0 0; font-size: 12px; color: var(--ds-dim); }
+  .none { margin: 12px 0 0; }
 
-  /* DevlogFeed is a hydrated React island — Astro's scoped-style attribute
-     never reaches into island markup, so these must stay :global(). */
-  :global(.devlog-search) {
-    display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+  @media (max-width: 640px) {
+    .rev { grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; }
+    .rev time { grid-column: 2; grid-row: 1; padding-top: 2px; }
+    .ref { grid-column: 1; grid-row: 1; padding: 1px 6px; }
+    .body { grid-column: 1 / -1; }
   }
-  :global(.devlog-search input) {
-    flex: 1; background: var(--bg-raise); border: var(--border); border-radius: var(--radius);
-    color: var(--ink); font-family: var(--font-mono); font-size: var(--step-0);
-    padding: 0.75rem 1rem;
-  }
-  :global(.devlog-search input:focus) { border-color: var(--accent); outline: none; }
-  :global(.devlog-search input::placeholder) { color: var(--ink-faint); }
-  :global(.devlog-count) { white-space: nowrap; }
-
-  :global(.stream) { list-style: none; display: flex; flex-direction: column; gap: var(--gap); }
-  :global(.entry) {
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    padding: 1.5rem;
-  }
-  :global(.entry-meta) { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
-  :global(.entry-meta .project-chip) { color: var(--accent); flex-shrink: 0; }
-  /* Ticker scroll mechanics (.ticker-viewport, track animation) live in
-     global.css, shared with every .stack/.tags list on the site — this
-     just keeps the pill look. */
-  :global(.entry-meta .tags) { list-style: none; }
-  :global(.entry-meta .tags li) { border: var(--border); padding: 0.05rem 0.4rem; border-radius: var(--radius); white-space: nowrap; }
-  :global(.entry h3) { font-size: var(--step-1); margin-bottom: 0.75rem; }
-  :global(.entry h3 a) { color: var(--ink); }
-  :global(.entry h3 a:hover) { color: var(--accent); }
-  :global(.entry-excerpt) { max-width: var(--measure); color: var(--ink-dim); }
 </style>
