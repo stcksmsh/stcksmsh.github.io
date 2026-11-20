@@ -1,172 +1,290 @@
 ---
-import Base from "../layouts/Base.astro";
-import Oscilloscope from "../components/islands/Oscilloscope.tsx";
+// Recordings: the music collection as a datasheet. Profile layout (no
+// visualizer, no global player): one SoundCloud widget on the page plays
+// whichever recording is picked. Length, tempo and the energy trace come from
+// each track's sinteza-viz sidecar (measured offline from the master), read
+// at build time; tracks without one just show less.
+import Profile from "../layouts/Profile.astro";
 import { getCollection } from "astro:content";
+import { readFile } from "node:fs/promises";
+import { identity as id } from "../data/profile";
 import { musicEmbedSrc } from "../lib/embeds";
+import "../styles/catalogue.css";
+
+const W = 300, H = 40;
+type Spec = { duration: number; tempo: number; drops: number[]; breaks: [number, number][]; path: string };
+async function spec(sidecar?: string): Promise<Spec | null> {
+  if (!sidecar) return null;
+  try {
+    const d = JSON.parse(await readFile(new URL(`../../public${sidecar}`, import.meta.url), "utf8"));
+    const env: number[] = d.energyEnvelope ?? [];
+    const cols = 150;
+    const pts: string[] = [];
+    for (let c = 0; c < cols; c++) {
+      const a = Math.floor((c / cols) * env.length), b = Math.max(a + 1, Math.floor(((c + 1) / cols) * env.length));
+      let m = 0;
+      for (let i = a; i < b && i < env.length; i++) m += env[i];
+      m /= b - a;
+      const x = ((c + 0.5) / cols) * ((env.length / d.envelopeRate) / d.duration) * W;
+      pts.push(`${x.toFixed(1)},${(H - 2 - m * (H - 6)).toFixed(1)}`);
+    }
+    const breaks: [number, number][] = [];
+    let bs: number | null = null;
+    for (const e of d.events ?? []) {
+      if (e.type === "breakStart") bs = e.t;
+      if (e.type === "breakEnd" && bs != null) { breaks.push([bs, e.t]); bs = null; }
+    }
+    if (bs != null) breaks.push([bs, d.duration]);
+    return {
+      duration: d.duration,
+      tempo: d.tempo,
+      drops: (d.events ?? []).filter((e: any) => e.type === "drop").map((e: any) => e.t),
+      breaks,
+      path: `M0,${H - 2} L${pts.join(" L")} L${pts.at(-1)!.split(",")[0]},${H - 2} Z`,
+    };
+  } catch (err) {
+    console.warn(`[music] sidecar ${sidecar} unreadable:`, err);
+    return null;
+  }
+}
 
 let tracks: any[] = [];
 try {
   const all = await getCollection("music");
-  tracks = all
-    .map((t) => ({ id: t.id, ...t.data }))
-    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-} catch {}
-
-const nav = [
-  ["projects", "/projects"],
-  ["music", "/music"],
-  ["devlog", "/devlog"],
-  ["cv", "/cv"],
-];
+  tracks = await Promise.all(
+    all
+      .map((t) => ({ slug: t.id, ...t.data }))
+      .sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.title.localeCompare(b.title))
+      .map(async (t, i) => ({ ...t, no: `R${i + 1}`, spec: await spec(t.sidecar) })),
+  );
+} catch (err) {
+  console.warn("[music] collection unavailable:", err);
+}
+const sc = tracks.filter((t) => t.source === "soundcloud");
+const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+const total = tracks.reduce((a, t) => a + (t.spec?.duration ?? 0), 0);
 ---
-<Base title="Music — Kosta Vukićević" description="Tracks, embeds, and the oscilloscope work behind them.">
-  <nav class="shell nav">
-    <a href="/" class="mark">KOSTA<span class="mark-dot">.</span>VUKIĆEVIĆ</a>
-    <ul>
-      {nav.map(([label, href]) => (
-        <li><a href={href}>{label}</a></li>
-      ))}
-    </ul>
-  </nav>
+<Profile title={`Music — ${id.name}`} description="Electronic tracks I make: recordings with their measured structure." fonts="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="sheet">
+    <header class="top">
+      <a href="/" class="logo" aria-label="Homepage">KV</a>
+      <nav aria-label="Primary" class="mono">
+        <a href="/">Home</a><a href="/projects">Projects</a><a href="/music" aria-current="page">Music</a><a href="/devlog">Build log</a><a href="/cv">CV</a>
+      </nav>
+    </header>
+    <main id="main">
+      <header class="head">
+        <p class="eyebrow mono">Recordings · {tracks.length} tracks{total > 0 && ` · ${mmss(total)} total`}</p>
+        <h1>Music</h1>
+        <p class="lede">Electronic tracks I make. Each one's structure was measured offline from the master: the trace is its energy over time, red marks are drops, shaded spans are breaks. To watch one drive a visualizer, play it on <a href="https://kostavukicevic.com/hysteresis/">the СИНТЕЗА visualizer's page</a>.</p>
+      </header>
 
-  <header class="shell music-hero">
-    <div class="music-scope">
-      <Oscilloscope client:load mode="wave" height={150} />
-    </div>
-    <div class="hero-copy">
-      <span class="coord">02 / SIGNAL</span>
-      <h1>Music</h1>
-      <p class="lede">
-        SoundCloud tracks play through the bar at the bottom of the page —
-        pick one here, keep browsing, it stays with you. Bandcamp releases
-        stay embedded below since there's no way to control those from here.
-      </p>
-    </div>
-  </header>
-
-  <section class="shell" id="tracks" style="margin-top: 3rem;">
-    {tracks.length === 0 ? (
-      <p class="empty coord">
-        // no tracks yet — add entries to <code>src/content/music/*.json</code>
-      </p>
-    ) : (
-      <ul class="tracks">
-        {tracks.map((t) => (
-          <li
-            class="track"
-            style={t.accent ? `--accent-l:${t.accent[0]};--accent-c:${t.accent[1]};--accent-h:${t.accent[2]};` : ""}
-          >
-            <div class="track-meta coord">
-              <span>{t.source}</span>
-              {t.year && <span>{t.year}</span>}
-            </div>
-            <h3>{t.title}</h3>
-            {t.source === "soundcloud" ? (
-              <button
-                type="button"
-                class="track-play"
-                data-track={JSON.stringify({
-                  slug: t.id, title: t.title, embedId: t.embedId, accent: t.accent, envelope: t.envelope,
-                })}
-              >
-                <span class="track-play-icon">▶</span>
-                <span>Play{t.envelope ? " — reactive" : ""}</span>
-              </button>
-            ) : (
-              <div class="track-embed">
-                <iframe
-                  loading="lazy"
-                  width="100%"
-                  height="300"
-                  seamless
-                  title={t.title}
-                  src={musicEmbedSrc(t)}
-                />
+      {tracks.length === 0 ? (
+        <section class="block"><p class="mono">No recordings in this build.</p></section>
+      ) : (
+        <>
+          {sc.length > 0 && (
+            <section class="block deck" aria-labelledby="d-h">
+              <h2 id="d-h"><span class="n mono">1</span>Deck</h2>
+              <div class="now">
+                <button type="button" class="play mono" id="deck-play" aria-label="Play" disabled>▶</button>
+                <div class="now-txt">
+                  <p class="mono lab" id="now-lab">Pick a recording</p>
+                  <p class="now-title" id="now-title">—</p>
+                </div>
+                <p class="mono time" aria-live="off"><span id="t-pos">0:00</span> / <span id="t-dur">0:00</span></p>
               </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
-</Base>
+              <iframe id="sc" class="sc" title="SoundCloud player" allow="autoplay; encrypted-media" loading="lazy"
+                src={musicEmbedSrc(sc[0])}></iframe>
+            </section>
+          )}
 
-<style>
-  .nav {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: clamp(0.75rem, 2vw, 1.5rem);
-    padding: 0.9rem clamp(1rem, 3vw, 1.75rem);
-    position: relative; z-index: 3;
-    background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--border);
-    border-radius: var(--radius-panel);
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-  }
-  .mark { font-family: var(--font-display); font-weight: 700; font-size: var(--step-1); color: var(--ink); letter-spacing: 0.02em; }
-  .mark-dot { color: var(--accent); }
-  .nav ul { display: flex; gap: 1.5rem; list-style: none; }
-  .nav ul a { color: var(--ink-dim); font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.1em; }
-  .nav ul a:hover { color: var(--accent); }
-  @media (max-width: 620px) {
-    .nav ul { display: none; }
-  }
+          <section class="block" aria-labelledby="r-h">
+            <h2 id="r-h"><span class="n mono">{sc.length ? 2 : 1}</span>Recordings</h2>
+            <div class="tablewrap">
+              <table class="recs">
+                <thead class="mono">
+                  <tr><th scope="col" class="c-no">No.</th><th scope="col">Title</th><th scope="col" class="c-num">Year</th><th scope="col" class="c-num">Length</th><th scope="col" class="c-num">Tempo</th><th scope="col" class="c-trace">Structure</th><th scope="col" class="c-act"><span class="vh">Play</span></th></tr>
+                </thead>
+                <tbody>
+                  {tracks.map((t) => (
+                    <tr data-slug={t.slug} data-embed={t.source === "soundcloud" ? `https://soundcloud.com/${t.embedId}` : undefined} data-title={t.title} data-dur={t.spec?.duration}>
+                      <td class="c-no mono">{t.no}</td>
+                      <td class="c-title">
+                        <span class="title">{t.title}</span>
+                        <span class="src mono">{t.source}</span>
+                        <span class="meta-m mono">{[t.year, t.spec && mmss(t.spec.duration), t.spec && `${Math.round(t.spec.tempo)} bpm`].filter(Boolean).join(" · ")}</span>
+                      </td>
+                      <td class="c-num mono">{t.year ?? "—"}</td>
+                      <td class="c-num mono">{t.spec ? mmss(t.spec.duration) : "—"}</td>
+                      <td class="c-num mono">{t.spec ? `${Math.round(t.spec.tempo)} bpm` : "—"}</td>
+                      <td class="c-trace">
+                        {t.spec ? (
+                          <svg class="trace" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img"
+                            aria-label={`Energy over ${mmss(t.spec.duration)}; ${t.spec.drops.length} drop${t.spec.drops.length === 1 ? "" : "s"}, ${t.spec.breaks.length} break${t.spec.breaks.length === 1 ? "" : "s"}`}>
+                            {t.spec.breaks.map(([a, b]) => <rect class="brk" x={(a / t.spec.duration) * W} y="0" width={((b - a) / t.spec.duration) * W} height={H} />)}
+                            <path class="env" d={t.spec.path} />
+                            {t.spec.drops.map((d: number) => <rect class="drop" x={(d / t.spec.duration) * W - 0.75} y="0" width="1.5" height={H} />)}
+                            <rect class="head" x="-2" y="0" width="1.5" height={H} />
+                          </svg>
+                        ) : t.source !== "soundcloud" ? (
+                          <iframe class="bc" loading="lazy" title={t.title} src={musicEmbedSrc(t)}></iframe>
+                        ) : <span class="mono dim">not measured</span>}
+                      </td>
+                      <td class="c-act">
+                        {t.source === "soundcloud" && <button type="button" class="play mono" aria-label={`Play ${t.title}`} aria-pressed="false">▶</button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-  /* Shared with .projects-hero/.devlog-hero so the three nav-adjacent
-     pages don't jump height on navigation (jarring with View Transitions). */
-  .music-hero {
-    padding-top: clamp(2rem, 5vw, 4rem);
-    min-height: clamp(420px, 46vh, 520px);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .music-scope {
-    border: var(--border); border-radius: var(--radius-panel);
-    background: var(--bg-sunken); overflow: hidden;
-    box-shadow: var(--panel-highlight), 0 0 80px -30px var(--accent-glow);
-  }
-  .hero-copy { margin-top: 2rem; }
-  .hero-copy h1 { font-size: var(--step-3); margin: 0.5rem 0 1rem; }
-  .lede { max-width: var(--measure); color: var(--ink-dim); font-size: var(--step-1); }
-
-  .tracks { list-style: none; display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-  .track {
-    border: var(--border); border-radius: var(--radius-panel); background: var(--bg-glass);
-    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-    padding: 1.5rem;
-    box-shadow: var(--panel-highlight), var(--panel-shadow);
-    transition: border-color 0.2s var(--ease-scope), box-shadow 0.2s var(--ease-scope);
-  }
-  .track:hover { border-color: var(--accent); box-shadow: var(--panel-highlight), 0 0 40px -20px var(--accent-glow); }
-  .track-meta { display: flex; gap: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
-  .track h3 { font-size: var(--step-1); margin-bottom: 1rem; }
-  .track-embed { border-radius: var(--radius); overflow: hidden; }
-  .track-embed iframe { display: block; border: 0; }
-
-  .track-play {
-    display: flex; align-items: center; gap: 0.6rem; width: 100%;
-    background: none; border: var(--border); border-radius: var(--radius);
-    color: var(--ink); font-family: var(--font-mono); font-size: var(--step--1);
-    padding: 0.7rem 1rem; cursor: pointer; letter-spacing: 0.04em;
-    transition: border-color 0.15s var(--ease-scope), color 0.15s var(--ease-scope);
-  }
-  .track-play:hover { border-color: var(--accent); color: var(--accent); }
-  .track-play-icon { color: var(--accent); }
-
-  .empty { display: block; padding: 2rem; border: 1px dashed var(--hairline); border-radius: var(--radius); }
-  .empty code { color: var(--accent); }
-</style>
+          <section class="block legend mono" aria-label="Legend">
+            <p><span class="sw env"></span> energy · <span class="sw drop"></span> drop · <span class="sw brk"></span> break · Tempo and structure are estimates from <a href="https://github.com/stcksmsh/hysteresis">sinteza-viz</a>'s offline analyzer, not hand-labelled. Click a trace to seek.</p>
+          </section>
+        </>
+      )}
+    </main>
+  </div>
+</Profile>
 
 <script>
-  import { requestPlay } from "../lib/player-bus";
-  // View Transitions re-run page scripts on every client-side navigation —
-  // guard against stacking duplicate listeners on repeat visits to /music.
-  if (!(window as any).__trackPlayBound) {
-    (window as any).__trackPlayBound = true;
-    document.addEventListener("click", (e) => {
-      const btn = (e.target as HTMLElement).closest(".track-play");
-      if (!btn) return;
-      const data = JSON.parse(btn.getAttribute("data-track")!);
-      requestPlay(data);
+  const iframe = document.getElementById("sc") as HTMLIFrameElement | null;
+  if (iframe) {
+    const rows = [...document.querySelectorAll<HTMLTableRowElement>("tr[data-embed]")];
+    const deckPlay = document.getElementById("deck-play") as HTMLButtonElement;
+    const nowTitle = document.getElementById("now-title")!;
+    const tPos = document.getElementById("t-pos")!, tDur = document.getElementById("t-dur")!;
+    const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+    let widget: any = null, current: HTMLTableRowElement | null = null, playing = false, queued = false, pos = 0;
+
+    const sync = () => {
+      deckPlay.textContent = playing ? "❚❚" : "▶";
+      deckPlay.setAttribute("aria-label", playing ? "Pause" : "Play");
+      for (const r of rows) {
+        const on = r === current;
+        r.classList.toggle("on", on);
+        const b = r.querySelector<HTMLButtonElement>("button.play")!;
+        b.textContent = on && playing ? "❚❚" : "▶";
+        b.setAttribute("aria-pressed", String(on && playing));
+        b.setAttribute("aria-label", `${on && playing ? "Pause" : "Play"} ${r.dataset.title}`);
+      }
+    };
+    const paintHead = () => {
+      queued = false;
+      if (!current) return;
+      const head = current.querySelector<SVGRectElement>("rect.head");
+      const d = Number(current.dataset.dur);
+      if (head && d) head.setAttribute("x", String((pos / d) * 300 - 0.75));
+    };
+    const fetchDuration = (n = 0) => widget?.getDuration((ms: number) => {
+      if (ms > 0) tDur.textContent = mmss(ms / 1000);
+      else if (n < 6) setTimeout(() => fetchDuration(n + 1), 250);
+    });
+    const pick = (r: HTMLTableRowElement, autoPlay = true, seekTo?: number) => {
+      if (!widget) return;
+      if (current && current !== r) current.querySelector("rect.head")?.setAttribute("x", "-2");
+      current = r;
+      pos = 0;
+      nowTitle.textContent = r.dataset.title!;
+      document.getElementById("now-lab")!.textContent = "Now playing";
+      tPos.textContent = "0:00"; tDur.textContent = r.dataset.dur ? mmss(Number(r.dataset.dur)) : "…";
+      widget.load(r.dataset.embed, {
+        auto_play: autoPlay, hide_related: true, show_comments: false, show_reposts: false, show_teaser: false, visual: false,
+        callback: () => { fetchDuration(); if (seekTo != null) widget.seekTo(seekTo * 1000); },
+      });
+      sync();
+    };
+
+    const s = document.createElement("script");
+    s.src = "https://w.soundcloud.com/player/api.js";
+    s.onload = () => {
+      const SC = (window as any).SC;
+      widget = SC.Widget(iframe);
+      widget.bind(SC.Widget.Events.READY, () => { deckPlay.disabled = false; });
+      widget.bind(SC.Widget.Events.PLAY, () => { playing = true; sync(); fetchDuration(); });
+      widget.bind(SC.Widget.Events.PAUSE, () => { playing = false; sync(); });
+      widget.bind(SC.Widget.Events.FINISH, () => {
+        playing = false;
+        const i = current ? rows.indexOf(current) : -1;
+        pick(rows[(i + 1) % rows.length]);
+      });
+      widget.bind(SC.Widget.Events.PLAY_PROGRESS, (e: { currentPosition: number }) => {
+        pos = e.currentPosition / 1000;
+        tPos.textContent = mmss(pos);
+        if (!queued) { queued = true; requestAnimationFrame(paintHead); }
+      });
+    };
+    document.head.appendChild(s);
+
+    for (const r of rows) {
+      r.querySelector("button.play")!.addEventListener("click", () => {
+        if (r === current) widget?.toggle();
+        else pick(r);
+      });
+      r.querySelector("svg.trace")?.addEventListener("click", (e) => {
+        const box = (e.currentTarget as SVGElement).getBoundingClientRect();
+        const t = ((((e as MouseEvent).clientX - box.left) / box.width) * Number(r.dataset.dur)) || 0;
+        if (r === current) { widget?.seekTo(t * 1000); if (!playing) widget?.play(); }
+        else pick(r, true, t);
+      });
+    }
+    deckPlay.addEventListener("click", () => {
+      if (!current) pick(rows[0]);
+      else widget?.toggle();
     });
   }
 </script>
+
+<style>
+  .now { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+  .play { width: 40px; height: 40px; border: 2px solid var(--ds-ink); background: var(--ds-hi); color: var(--ds-ink); font-size: 14px; font-weight: 700; cursor: pointer; display: grid; place-items: center; padding: 0; }
+  .play:hover:not(:disabled) { background: var(--ds-ink); color: var(--ds-hi); }
+  .play:disabled { opacity: .5; cursor: progress; }
+  .lab { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--ds-dim); }
+  .now-title { margin: 0; font-weight: 900; font-size: clamp(22px, 4vw, 34px); line-height: 1.05; font-variation-settings: "wdth" 70; text-transform: uppercase; overflow-wrap: anywhere; }
+  .time { margin: 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .sc { display: block; width: 100%; height: 20px; border: 0; margin-top: 14px; }
+
+  .tablewrap { overflow-x: auto; }
+  .recs { border-collapse: collapse; width: 100%; }
+  .recs th, .recs td { text-align: left; vertical-align: middle; padding: 10px 10px 10px 0; border-bottom: 1px solid var(--ds-rule); }
+  .recs thead th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ds-dim); border-bottom: 2px solid var(--ds-ink); font-weight: 600; }
+  .recs tbody tr:hover, .recs tbody tr.on { background: linear-gradient(90deg, var(--ds-hi), transparent 55%); }
+  .c-no { width: 3em; font-weight: 700; }
+  .c-num { width: 5.5em; white-space: nowrap; font-size: 13px; }
+  .c-act { width: 52px; text-align: right !important; padding-right: 0 !important; }
+  .c-trace { width: 40%; min-width: 180px; }
+  .title { display: block; font-weight: 800; font-size: 19px; line-height: 1.15; }
+  .src { font-size: 11px; color: var(--ds-dim); text-transform: uppercase; letter-spacing: .08em; }
+  .dim { color: var(--ds-dim); font-size: 12px; }
+  .trace { display: block; width: 100%; height: 40px; cursor: pointer; border-bottom: 1.5px solid var(--ds-ink); }
+  .env { fill: var(--ds-ink); }
+  tr.on .env { fill: var(--ds-blue); }
+  .drop { fill: #e0261b; }
+  .brk { fill: rgba(0,0,0,.08); }
+  .meta-m { display: none; font-size: 12px; color: var(--ds-dim); }
+  .head { fill: #e0261b; }
+  .bc { width: 100%; height: 120px; border: 0; }
+  .legend p { margin: 0; font-size: 12px; line-height: 2; color: var(--ds-dim); }
+  .sw { display: inline-block; width: 14px; height: 10px; vertical-align: -1px; border: 1px solid var(--ds-ink); }
+  .sw.env { background: var(--ds-ink); }
+  .sw.drop { background: #e0261b; border-color: #e0261b; width: 4px; }
+  .sw.brk { background: rgba(0,0,0,.08); }
+
+  @media (max-width: 760px) {
+    .recs thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .recs, .recs tbody { display: block; }
+    .recs tr { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--ds-rule); align-items: center; }
+    .recs td { border: 0; padding: 0; width: auto; min-width: 0; }
+    .c-no { grid-row: 1; grid-column: 1; }
+    .c-title { grid-row: 1; grid-column: 2; }
+    .c-act { grid-row: 1; grid-column: 3; }
+    .c-num { display: none; }
+    .c-trace { grid-row: 2; grid-column: 1 / -1; min-width: 0; }
+    .meta-m { display: block; }
+  }
+</style>

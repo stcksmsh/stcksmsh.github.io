@@ -13,7 +13,8 @@
       "repo": "stcksmsh/deaf-composition",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/aegis",
@@ -26,7 +27,8 @@
       "repo": "stcksmsh/skilltree",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/EmojiType",
@@ -52,7 +54,8 @@
       "repo": "stcksmsh/hysteresis",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     },
     {
       "repo": "stcksmsh/kabl",

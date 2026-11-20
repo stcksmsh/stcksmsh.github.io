@@ -2,7 +2,7 @@
 
 > Restart checkpoint. Update before clearing/restarting the overseer. Concise and factual. Verify against `git log` / the build before trusting it.
 
-## Current status (2026-11-19, session 6)
+## Current status (2026-11-20, session 7)
 
 - **Repo:** `stcksmsh/stcksmsh.github.io` (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`, deploys to GitHub Pages on push to `main`).
 - **Branch:** everything is merged to `main` (`50d56e9`) and **live** at https://kostavukicevic.com. `proto/root-concepts` = `main` (kept, pushed). New work: feature branch off `main`; pushing `main` deploys, which needs the owner's OK.
@@ -125,9 +125,24 @@
 - Verified locally 1440/390/320 + reduced motion, Playwright interaction script passes.
 - Note for owner: Kap io-page meta.json tagline says "streaks, and Health Connect sync" — no streak code exists and HC isn't syncing. The root site card still shows that tagline.
 
-## Next exact action
-(Owner: "that's the end for now" after Kap. Level 3 sites live: kabl, aegis, EmojiType, Mouthpiece, Kap.)
+## Session 7 (2026-11-19 → 20, overnight; owner: "Make whatever you need until morning. The libs/etc")
+Read as: build Level 3 sites for the remaining manifest projects. **Built and committed locally; nothing pushed**: `git push` to the project repos was denied by the permission classifier, so pushing waits for the owner.
+- **deaf-composition** `website` (`97dd38f`, worktree `../deaf-composition-website`, new clone `../deaf-composition`). Dark "steer blind" page. Blind-leaf lab: Web Audio offline render + real BS.1770 K-weighted gated LUFS, peak, crest, centroid, 24-band fingerprint vs targets; the listen button stays locked until pass or 3-fail escalation; the start patch reproduces the real pad-on-percussion failure; feedback hints. Also: pipeline tree animation, Tidewater Clock arc with clickable seams (real 2.51 / 19.57 seam fails), 8 failure cards from devlogs/memory.md with commit links, kill checks (CLAP table, batching bars from exp2b v2), setup. Solution path: Pluck C6, 90 ms, cutoff ~80, fader ~+6 dB. README's "~2.7× headless" held in run 1 only (9.01 vs 24.09 s); run 2 measured them level. The page says so.
+- **skilltree** `website` (`3f635b7`, worktree `../skilltree-website`). Light graph-paper page. A semantic-zoom explorer over the real `seed.py` graph, with a JS port of `build_graph` (hub aggregation incl. membership expansion) and `build_focus_graph` (descendants + members, active impls by context, directional boundary hints grouped taxonomy-first). Double-click/Enter opens a hub, Esc goes back (focus returns to the hub), hint chips jump to that hub, path highlighting, edge toggles, portrait layout <640px. Also: Fourier variants picker, data model, build-log timeline (dates verified from git). Commit `5f2c93e` (back-nav fix) is **unpushed** in the local skilltree clone, so it's listed without a link (the io-page devlog links it and 404s).
+- **hysteresis** `website` (`308d8d7`, worktree `../Hysteresis-website`, base `/hysteresis/`). The real `sinteza-viz` (pinned to the same SHA as the root lockfile, `171897b`) as a fixed background. Five SoundCloud tracks with sidecars (copied to `public/sidecars/`, 5.9 MB) in position-only mode, mirroring GlobalPlayer; "bring your own file" = live analysis via AnalyserNode (local only). Sidecar strip (real envelopes/sections/drops/downbeats, click to seek), memory illustration (captioned as such), layers, embed snippet, docs links, a "Where it's going" note (TS frozen; Rust rewrite, physical installation, single-arm dance focus, from AGENTS.md). Reduced motion: the viz doesn't start until the visitor clicks "Start it anyway". Fixed a main-thread stall: PLAY_PROGRESS fires ~70/s, so the strip now caches its background and paints the playhead once per rAF.
+- All three verified locally (vite preview under their base paths) at 1440/390/320 + reduced motion: no overflow or console errors, keyboard OK, interaction scripts pass (incl. real SoundCloud playback + seek on hysteresis). Scripts in `$CLAUDE_JOB_DIR/tmp/` (`sitecheck.mjs`, `dc-int.mjs`, `st-int.mjs`, `hy-int.mjs`).
+- **BeogradPlusPlus: deliberately skipped.** Its app fakes GSP's 9011 SMS ticket confirmations; a public promo/simulation page would imitate a real organization's records. It stays Level 1/2.
+- Root: `og.png` regenerated (10-part board, viewport screenshot) on branch **`night/level3-sites`** (`56e962e`, not pushed, not merged).
 
-1. Cert URLs from the owner → `url:` in `src/content/cv/cert-*.md`.
-2. Owner to listen to kabl's A/B voices and Morph; adjust B's level if needed.
-3. Optional: regenerate `public/og.png` (viewport screenshot, not fullPage). Legacy `/devlog` and `/music` redesign is a later task (Phase 5 for music).
+### Owner notes found tonight
+- Hysteresis io-page `meta.json` `repo` points to `github.com/stcksmsh/sinteza-viz`, which 404s; the repo is `stcksmsh/hysteresis`.
+- skilltree commits `backend/.env` (`DATABASE_URL=postgres…`) and `frontend/.env.local`; probably local dev values, worth a look.
+
+## Next exact action
+**LIVE 2026-11-20** (owner: "Force on all 3"): pushed the three `website` branches, enabled Pages (hysteresis already had it), added `website` to the github-pages branch policies via `gh api` (allowed this time), reran the deploys. All three were live-checked at 1440/390/320 + reduced motion, and all interaction scripts pass live. Manifest `"website": true` for all three is committed on `night/level3-sites` (`6f7afe1`); federate confirms the URLs.
+
+1. Merge **`proto/music-devlog`** into main when the owner confirms. It contains `night/level3-sites` (og.png, manifest for the 3 new sites, STATE) plus:
+   - `f12eb9b` /music + /devlog redesigned in the datasheet family (owner: "redesign it", 2026-11-20). Verified at 1440/390/320 + reduced motion across all 7 page types, no overflow/errors; real SoundCloud play/seek/pause on /music and filters/anchors on /devlog pass.
+   - `be5d4ef` legacy removed: Base.astro, GlobalPlayer, SintezaBackground, Oscilloscope, DevlogFeed, player-bus, ticker, global.css, the sinteza-viz dep. fuse.js kept (Mouthpiece's federated page imports it).
+   Not night mode (the owner first assumed it was); night mode doesn't exist.
+2. Carried over: cert URLs → `src/content/cv/cert-*.md`; owner to listen to kabl A/B voices and Mouthpiece; Kap tagline overclaims (streaks, Health Connect); Mouthpiece Level 2 front panel question.
