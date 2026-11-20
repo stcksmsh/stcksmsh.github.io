@@ -2,12 +2,13 @@
 
 > Restart checkpoint. Update before clearing/restarting the overseer. Concise and factual. Verify against `git log` / the build before trusting it.
 
-## Current status (2026-11-20, session 7)
+## Current status (verified 2026-11-21, session 8)
 
 - **Repo:** `stcksmsh/stcksmsh.github.io` (origin `git@github.com:stcksmsh/stcksmsh.github.io.git`, default `main`, deploys to GitHub Pages on push to `main`).
-- **Branch:** everything is merged to `main` (`50d56e9`) and **live** at https://kostavukicevic.com. `proto/root-concepts` = `main` (kept, pushed). New work: feature branch off `main`; pushing `main` deploys, which needs the owner's OK.
+- **Branch:** everything is merged to `main` (`ae67c66`, = origin) and **live** at https://kostavukicevic.com. `night/level3-sites`, `proto/music-devlog`, `proto/root-concepts` are merged (kept). New work: feature branch off `main`; pushing `main` deploys, which needs the owner's OK.
 - **Untracked, not ours:** `public/demo/` (pre-existing; the owner hasn't said whether to commit it). Don't touch it.
-- **Local demo:** `npx astro build && npx astro preview --port 4329 --host 127.0.0.1` gives `/` (board) and `/cv`. `/next` no longer exists.
+- **Local demo:** `npx astro build && npx astro preview --port 4329 --host 127.0.0.1` gives all 6 pages.
+- **Session 8 check (2026-11-21):** full build OK (federate: 9 projects, 8 with websites), `test:publication` 8/8, last deploy run 44732233567 ✓, root + all 8 project sites return 200.
 - **Last verified (commit `Make the board skin the homepage…`):** full `npm run build` OK, `npm run test:publication` 8/8. `/` and `/cv` in headless Chrome at 1440/390/320: no overflow, no console errors, no broken links, keyboard focus, reduced motion pauses SVG. Plus a text clip/overlap sweep at 14 widths (320–1920): SVG labels keep ≥4px inside their boxes, no HTML overlay hits a board part, no text within 8px of the viewport edge. Script pattern: `$CLAUDE_JOB_DIR/tmp/clip.mjs` (may be gone; rewrite if needed).
 - **Playwright** for checks: installed in `$CLAUDE_JOB_DIR/tmp` from an earlier job, which may be gone. If so, reinstall in a scratch dir (`npm i playwright@1.55.0`) and launch with `executablePath: "/usr/bin/google-chrome"`. Use `waitUntil: "load"` + `document.fonts.ready`, not `networkidle` (legacy pages never go idle because of embeds).
 
@@ -47,7 +48,7 @@
 ### DECIDED
 - Board skin is the homepage; datasheet homepage deleted (2026-11-19).
 - Root = personal/professional profile; composition = editorial opening + structured profile.
-- Root/CV never mount the old visualizer/player; legacy pages (`/projects`, `/devlog`, `/music`) stay on `Base.astro` and are reachable from the home footer.
+- No page mounts the old visualizer/player; `Base.astro` is gone (2026-11-20), every page uses `Profile.astro`.
 - Datasheet visual family (paper/ink/yellow, Archivo + JetBrains Mono). The CV is final for now.
 - The owner wants the homepage more artistic, dynamic and "not static", and less Kotlin/Android-centric ("I'm simply a programmer").
 - Preserve `io-page` compatibility; never bulk-migrate project repos.
