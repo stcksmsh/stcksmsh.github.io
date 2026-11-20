@@ -141,8 +141,10 @@ Read as: build Level 3 sites for the remaining manifest projects. **Built and co
 ## Next exact action
 **LIVE 2026-11-20** (owner: "Force on all 3"): pushed the three `website` branches, enabled Pages (hysteresis already had it), added `website` to the github-pages branch policies via `gh api` (allowed this time), reran the deploys. All three were live-checked at 1440/390/320 + reduced motion, and all interaction scripts pass live. Manifest `"website": true` for all three is committed on `night/level3-sites` (`6f7afe1`); federate confirms the URLs.
 
-1. Merge **`proto/music-devlog`** into main when the owner confirms. It contains `night/level3-sites` (og.png, manifest for the 3 new sites, STATE) plus:
-   - `f12eb9b` /music + /devlog redesigned in the datasheet family (owner: "redesign it", 2026-11-20). Verified at 1440/390/320 + reduced motion across all 7 page types, no overflow/errors; real SoundCloud play/seek/pause on /music and filters/anchors on /devlog pass.
-   - `be5d4ef` legacy removed: Base.astro, GlobalPlayer, SintezaBackground, Oscilloscope, DevlogFeed, player-bus, ticker, global.css, the sinteza-viz dep. fuse.js kept (Mouthpiece's federated page imports it).
-   Not night mode (the owner first assumed it was); night mode doesn't exist.
-2. Carried over: cert URLs → `src/content/cv/cert-*.md`; owner to listen to kabl A/B voices and Mouthpiece; Kap tagline overclaims (streaks, Health Connect); Mouthpiece Level 2 front panel question.
+**DEPLOYED 2026-11-20** (owner: "Merge it all"): `proto/music-devlog` (incl. night) merged to main as `44285ec`, deploy run 44731348652 ✓ (federate: all 9, 8 with websites). Live-checked /, /cv, /projects, /music, /devlog at 1440/390/320 + reduced motion: no overflow/errors; live SoundCloud play/seek/pause on /music and /devlog filters/anchors pass (one transient SoundCloud "signal is aborted" in 1 of 3 runs, not reproducible).
+
+Remaining (all need the owner):
+1. Phase 5: music *site* / MAXIMAVELIANISM, art (ADMITTANCE PROCEDURE), plant app: need content.
+2. AIW / Recall / SoundField-Studio: list or give sites?
+3. Open brief decisions: portrait, `software.` subdomain, hysteresis category (its publication.json says software).
+4. Carried over: cert URLs → `src/content/cv/cert-*.md`; owner to listen to kabl A/B voices and Mouthpiece; Kap tagline overclaims (streaks, Health Connect); Mouthpiece Level 2 front panel question.
