@@ -139,9 +139,7 @@ Read as: build Level 3 sites for the remaining manifest projects. **Built and co
 - skilltree commits `backend/.env` (`DATABASE_URL=postgres…`) and `frontend/.env.local`; probably local dev values, worth a look.
 
 ## Next exact action
-1. **Owner pushes the three website branches** (or OKs a push in chat):
-   `git -C ../deaf-composition push -u origin website`, `git -C ../skilltree push -u origin website`, `git -C ../Hysteresis push -u origin website`.
-   Then for each repo: Pages → Source "GitHub Actions" (`gh api -X POST repos/stcksmsh/<repo>/pages -f build_type=workflow`), add `website` to the github-pages environment's deployment branches, rerun the deploy, live-check, then add `"website": true` to the manifest entry and push main.
-   URLs: kostavukicevic.com/deaf-composition/, /skilltree/, /hysteresis/.
-2. Merge `night/level3-sites` (og.png + this STATE) when the owner says so.
-3. Carried over: cert URLs → `src/content/cv/cert-*.md`; owner to listen to kabl A/B voices and Mouthpiece; Kap tagline overclaims (streaks, Health Connect); Mouthpiece Level 2 front panel question.
+**LIVE 2026-11-20** (owner: "Force on all 3"): pushed the three `website` branches, enabled Pages (hysteresis already had it), added `website` to the github-pages branch policies via `gh api` (allowed this time), reran the deploys. All three were live-checked at 1440/390/320 + reduced motion, and all interaction scripts pass live. Manifest `"website": true` for all three is committed on `night/level3-sites` (`6f7afe1`); federate confirms the URLs.
+
+1. Merge `night/level3-sites` into main when the owner confirms (og.png + STATE + manifest; **not** night mode, which the owner first assumed it was).
+2. Carried over: cert URLs → `src/content/cv/cert-*.md`; owner to listen to kabl A/B voices and Mouthpiece; Kap tagline overclaims (streaks, Health Connect); Mouthpiece Level 2 front panel question.
