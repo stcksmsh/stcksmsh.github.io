@@ -39,12 +39,12 @@ const projectDomains: Record<string, string[]> = {
   mouthpiece: ["audio", "tools", "creative"],
   "deaf-composition": ["audio", "creative"],
   aegis: ["systems", "tools"],
-  skilltree: ["web", "systems"],
   emojitype: ["web", "tools"],
   kap: ["android"],
   "sinteza-viz": ["creative", "web", "audio"],
   "beograd-plus-plus": ["android"],
   kabl: ["audio", "systems", "creative"],
+  overgrown: ["android"],
 };
 
 type ProjectData = CollectionEntry<"projects">["data"];

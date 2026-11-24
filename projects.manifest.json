@@ -24,13 +24,6 @@
       "website": true
     },
     {
-      "repo": "stcksmsh/skilltree",
-      "branch": "io-page",
-      "contentPath": "",
-      "enabled": true,
-      "website": true
-    },
-    {
       "repo": "stcksmsh/EmojiType",
       "branch": "io-page",
       "contentPath": "",
@@ -63,6 +56,12 @@
       "contentPath": "",
       "enabled": true,
       "website": true
+    },
+    {
+      "repo": "stcksmsh/overgrown",
+      "branch": "io-page",
+      "contentPath": "",
+      "enabled": true
     }
   ]
 }

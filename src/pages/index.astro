@@ -22,10 +22,6 @@ const parts: PartInput[] = [
     id: "results", ref: "Y1", kind: "xtal" as const, title: "OLYMPIADS", sub: "IMO · BMO · IOI", href: "#results",
     domains: ["math"], detail: c.awards.map((a) => a.title).join(" · "),
   }] : []),
-  ...c.education.map((e, i) => ({
-    id: `edu-${i}`, ref: `U${20 + i}`, kind: "ic" as const, title: "ETF BELGRADE", sub: "SOFTWARE ENG.", href: "#work",
-    domains: ["math", "systems"], detail: `${e.title} — ${e.org} (${range(e.start, e.end)})`,
-  })),
   ...c.projects.map((p) => ({
     id: `p-${p.slug}`, ref: p.ref, kind: "ic" as const, title: p.title.toUpperCase(), sub: p.status.toUpperCase(), href: p.url ?? `/projects/${p.slug}`,
     domains: p.domains, detail: `${p.tagline}  [${p.stack.join(" · ")}]`,
@@ -39,7 +35,7 @@ const fingers = [
 ];
 
 const wide: Layout = {
-  // 11 slots: 3 records (work, olympiads, ETF) + up to 8 featured projects.
+  // 11 slots: 2 records (work, olympiads) + up to 9 featured projects.
   w: 1600, h: 1290,
   chip: { x: 800, y: 560, w: 350, h: 300 },
   slots: { l: [{ x: 250, y: 520 }, { x: 250, y: 690 }, { x: 250, y: 860 }, { x: 250, y: 1030 }], r: [{ x: 1350, y: 330 }, { x: 1350, y: 500 }, { x: 1350, y: 670 }, { x: 1350, y: 840 }, { x: 1350, y: 1010 }], b: [{ x: 470, y: 1170 }, { x: 1130, y: 1170 }] },
