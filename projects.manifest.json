@@ -61,7 +61,8 @@
       "repo": "stcksmsh/overgrown",
       "branch": "io-page",
       "contentPath": "",
-      "enabled": true
+      "enabled": true,
+      "website": true
     }
   ]
 }
