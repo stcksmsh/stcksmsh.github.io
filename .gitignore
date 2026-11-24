@@ -10,3 +10,4 @@ public/generated/projects/
 
 # agent worktrees
 .claude/worktrees/
+.claude/tmp/
